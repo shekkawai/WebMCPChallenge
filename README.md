@@ -57,6 +57,7 @@ bun run dev
 # open http://localhost:5173/?demo=mail
 # (also: drive | calendar | month | reader | slots | options | chosen | people | done | photo)
 # Click Camera to enable palm swipes; ← → remains the no-camera fallback
+# Click Controller to teach a BLE ring/clicker its Previous, Next, and Select buttons
 # window.__surface exposes the store, WebMCP adapter, and gesture controller
 ```
 
@@ -77,14 +78,19 @@ there is a ~0.5s cooldown before the next one can fire.
 
 ### Ring / clicker / wheel input
 
-Cheap BLE "scrolling rings" and presenter clickers pair as plain Bluetooth
-keyboards, so they drive the surface with no pairing code at all: every arrow
-key and PageUp/PageDown maps to prev/next, and mouse-wheel flicks (some rings,
-trackpads, Magic Mouse) navigate too — accumulated with a threshold and
-cooldown so one flick is one swipe. Inside the reader the wheel scrolls the
-document instead of navigating. If a device's button isn't mapped, pressing it
-prints `input · key "…" (unmapped)` in the on-screen agent feed, so any ring
-self-identifies in one press.
+Click **Controller**, then press the ring's **Previous**, **Next**, and
+**Select** buttons once. The page learns the exact keyboard key, mouse button,
+or wheel direction emitted by that device, saves it locally, and turns on Ring
+Mode. Select opens the focused email/file or chooses the focused invitation
+design; it never creates a calendar event or sends anything—those actions still
+require voice confirmation through the agent.
+
+Outside Ring Mode, vertical scrolling, PageUp/PageDown, ArrowUp/ArrowDown,
+mouse clicks, and trackpad gestures keep their normal browser behavior. The
+plain ArrowLeft/ArrowRight no-camera fallback remains available away from form
+controls. Some media/browser keys can be consumed by the operating system and
+will not reach any webpage; Controller Setup makes that limitation visible
+instead of claiming universal compatibility.
 
 Deploy the production build to Cloudflare Workers with `bun run deploy`.
 
@@ -99,6 +105,7 @@ Every pull request is automatically tested and built. Every push to `main` that 
 - [x] Event-planning flow: slot proposals → confirm-to-event, rendered invitation-card options, recipients grid, sent confirmation
 - [x] Camera palm-swipe, local MediaPipe model, explicit camera control, and landmark-level tests (ported from [dsh-jarvis-hud](https://github.com/shekkawai/dsh-jarvis-hud), MIT)
 - [x] Live hand-skeleton overlay on the camera preview, per-state status line, and on-screen gesture hints
+- [x] Opt-in Controller Setup for BLE rings/clickers with learned Previous, Next, and safe local Select controls
 - [x] Cloudflare Workers deployment with all camera assets verified over HTTPS
 - [ ] Verify tool calls end-to-end in ChatGPT desktop in-app browser
 - [ ] Demo video

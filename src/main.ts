@@ -2,7 +2,8 @@ import { Store } from "./state/store";
 import { WebMCPAdapter } from "./webmcp/adapter";
 import { wireTools } from "./tools";
 import { renderApp } from "./views/renderer";
-import { attachCameraSwipe, attachKeyboardSwipe, attachWheelSwipe, type CameraSwipeController } from "./gesture/swipe";
+import { attachCameraSwipe, type CameraSwipeController } from "./gesture/swipe";
+import { attachControllerInput, type ControllerInput } from "./input/controller";
 import { localDateISO } from "./utils";
 
 const store = new Store();
@@ -10,16 +11,15 @@ const mcp = new WebMCPAdapter();
 
 renderApp(document.getElementById("app")!, store, mcp.available);
 wireTools(store, mcp);
-attachKeyboardSwipe(store);
-attachWheelSwipe(store);
 const gesture = attachCameraSwipe(store);
+const controller = attachControllerInput(store);
 
 declare global {
   interface Window {
-    __surface: { store: Store; mcp: WebMCPAdapter; gesture: CameraSwipeController };
+    __surface: { store: Store; mcp: WebMCPAdapter; gesture: CameraSwipeController; controller: ControllerInput };
   }
 }
-window.__surface = { store, mcp, gesture };
+window.__surface = { store, mcp, gesture, controller };
 
 // ?demo=mail|drive|calendar|month|reader seeds fake data so every view is
 // testable without an agent attached.

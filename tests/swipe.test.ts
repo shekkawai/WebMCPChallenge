@@ -1,6 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import { isOpenPalm, type Point } from "../src/gesture/pose";
 import { PalmSwipeDetector } from "../src/gesture/swipe";
+import { Store } from "../src/state/store";
+import {
+  actionForToken,
+  activateFocused,
+  describeInputToken,
+  keyInputToken,
+  pointerInputToken,
+  WheelInputDetector,
+  wheelInputToken,
+} from "../src/input/controller";
 
 function pose(kind: "open" | "fist", wristY = 0.75): Point[] {
   const dy = wristY - 0.75;
@@ -66,37 +76,55 @@ describe("palm swipe", () => {
   });
 });
 
-import { swipeForKey, WheelSwipeDetector } from "../src/gesture/swipe";
-
 describe("ring / clicker input", () => {
-  test("maps every arrow and page key a BLE ring mode may emit", () => {
-    expect(swipeForKey("ArrowRight")).toBe(1);
-    expect(swipeForKey("ArrowDown")).toBe(1);
-    expect(swipeForKey("PageDown")).toBe(1);
-    expect(swipeForKey("ArrowLeft")).toBe(-1);
-    expect(swipeForKey("ArrowUp")).toBe(-1);
-    expect(swipeForKey("PageUp")).toBe(-1);
-    expect(swipeForKey("Enter")).toBeNull();
-    expect(swipeForKey("a")).toBeNull();
+  test("learns exact ring signals instead of claiming a fixed universal map", () => {
+    const bindings = { previous: keyInputToken("PageUp")!, next: keyInputToken("PageDown")!, select: keyInputToken("Enter")! };
+    expect(actionForToken(bindings, keyInputToken("PageUp"))).toBe("previous");
+    expect(actionForToken(bindings, keyInputToken("PageDown"))).toBe("next");
+    expect(actionForToken(bindings, keyInputToken("Enter"))).toBe("select");
+    expect(actionForToken(bindings, keyInputToken("ArrowDown"))).toBeNull();
+    expect(keyInputToken("Shift")).toBeNull();
   });
 
-  test("wheel flick fires one swipe, slow drift fires none", () => {
-    const detector = new WheelSwipeDetector();
+  test("learns keyboard, mouse, and wheel signals with readable labels", () => {
+    expect(pointerInputToken(0)).toBe("pointer:0");
+    expect(wheelInputToken(0, 20)).toBe("wheel:y:+");
+    expect(wheelInputToken(-20, 5)).toBe("wheel:x:-");
+    expect(describeInputToken("key: ")).toBe("Space");
+    expect(describeInputToken("pointer:0")).toBe("Mouse click");
+    expect(describeInputToken("wheel:y:-")).toBe("Wheel up");
+  });
+
+  test("wheel setup waits for a deliberate flick and keeps direction distinct", () => {
+    const detector = new WheelInputDetector();
     expect(detector.push(0, 60, 0)).toBeNull();
-    expect(detector.push(0, 80, 16)).toBe(1);
+    expect(detector.push(0, 80, 16)).toBe("wheel:y:+");
     expect(detector.push(0, 200, 100)).toBeNull();
-    expect(detector.push(0, -200, 700)).toBe(-1);
+    expect(detector.push(0, -200, 700)).toBe("wheel:y:-");
   });
 
-  test("direction change resets the accumulator", () => {
-    const detector = new WheelSwipeDetector();
+  test("direction change resets the wheel accumulator", () => {
+    const detector = new WheelInputDetector();
     expect(detector.push(100, 0, 0)).toBeNull();
     expect(detector.push(-100, 0, 16)).toBeNull();
-    expect(detector.push(-30, 0, 32)).toBe(-1);
+    expect(detector.push(-30, 0, 32)).toBe("wheel:x:-");
   });
 
-  test("horizontal delta wins when larger", () => {
-    const detector = new WheelSwipeDetector();
-    expect(detector.push(-150, 40, 0)).toBe(-1);
+  test("local select opens cards, selects designs, and never confirms calendar writes", () => {
+    const store = new Store();
+    store.showStack("mail", "Mail", "email", [{ id: "m1", title: "Message", content: "Body" }]);
+    expect(activateFocused(store)).toBe("opened");
+    expect(store.state.view).toBe("reader");
+    expect(activateFocused(store)).toBe("closed");
+    expect(store.state.view).toBe("stack");
+
+    store.showStack("options", "Options", "option", [{ id: "1", kind: "option", title: "One" }]);
+    expect(activateFocused(store)).toBe("selected");
+    expect(store.activeStack()?.items[0].selected).toBe(true);
+
+    store.proposeSlots([{ date: "2026-09-04", time: "19:00" }]);
+    expect(activateFocused(store)).toBe("confirmation-required");
+    expect(store.state.proposals).toHaveLength(1);
+    expect(store.state.done).toBeNull();
   });
 });

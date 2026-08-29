@@ -251,6 +251,8 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
       <span class="mcp">${mcpAvailable ? "WebMCP ✓" : "keys ← →"}</span>
       <span class="sep">·</span>
       <button id="camera-toggle" type="button">Camera</button>
+      <span class="sep">·</span>
+      <button id="controller-toggle" type="button" data-controller-ui>Controller</button>
     </div>
     <main id="stage"></main>
     <nav id="dock" class="glass"></nav>
@@ -267,6 +269,24 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
         <li><b>⇄</b> sweep — prev / next</li>
         <li><b>⌨</b> arrow keys work too</li>
       </ul>
+    </aside>
+    <aside id="controller-panel" class="glass" data-controller-ui hidden>
+      <div class="controller-head">
+        <div><span>INPUT</span><h2>Controller Setup</h2></div>
+        <button id="controller-close" type="button" aria-label="Close controller setup">×</button>
+      </div>
+      <p id="controller-status">Teach the page three ring buttons</p>
+      <ol class="controller-steps">
+        <li data-controller-action="previous"><span class="step-number">1</span><b>Previous</b><span class="controller-binding">Not learned</span></li>
+        <li data-controller-action="next"><span class="step-number">2</span><b>Next</b><span class="controller-binding">Not learned</span></li>
+        <li data-controller-action="select"><span class="step-number">3</span><b>Select</b><span class="controller-binding">Not learned</span></li>
+      </ol>
+      <label class="controller-mode"><span><b>Ring Mode</b><small>Use only the controls learned above</small></span><input id="controller-mode" type="checkbox" /></label>
+      <div class="controller-actions">
+        <button id="controller-start" type="button">Start setup</button>
+        <button id="controller-reset" type="button" hidden>Reset</button>
+      </div>
+      <p class="controller-note">Keyboard scrolling stays normal. Wheel gestures navigate only while Ring Mode is on. Calendar creation and sending still require voice confirmation.</p>
     </aside>
     <div id="swipe-pulse" aria-hidden="true"></div>`;
 

@@ -39,13 +39,13 @@ body {
 #chip .listen { color: #ffcf8a; }
 #chip .listen::before { content: "● "; font-size: 9px; vertical-align: 1px; animation: pulse 2.2s infinite; }
 #chip .mcp { color: rgba(255, 255, 255, 0.45); }
-#camera-toggle {
+#camera-toggle, #controller-toggle {
   border: 0; border-radius: 99px; padding: 5px 11px; margin: -5px -10px -5px 0;
   color: rgba(255, 255, 255, 0.62); background: rgba(255, 255, 255, 0.08);
   font: inherit; font-size: 12px; cursor: pointer;
 }
-#camera-toggle:hover { color: #fff; background: rgba(255, 255, 255, 0.15); }
-#camera-toggle.on { color: #9ef3c9; background: rgba(80, 220, 150, 0.14); }
+#camera-toggle:hover, #controller-toggle:hover { color: #fff; background: rgba(255, 255, 255, 0.15); }
+#camera-toggle.on, #controller-toggle.on { color: #9ef3c9; background: rgba(80, 220, 150, 0.14); }
 #camera-toggle:disabled { opacity: 0.5; cursor: wait; }
 @keyframes pulse { 50% { opacity: 0.45; } }
 
@@ -77,6 +77,51 @@ body {
 }
 #gesture-hints b { font-weight: 400; margin-right: 6px; }
 #gesture-hints i { font-style: normal; color: #9ef3c9; }
+
+#controller-panel {
+  position: absolute; left: 26px; top: 82px; width: 330px; padding: 22px;
+  border-radius: 24px; z-index: 14;
+}
+#controller-panel[hidden] { display: none; }
+.controller-head { display: flex; align-items: flex-start; justify-content: space-between; }
+.controller-head span { font-size: 10px; letter-spacing: 0.18em; color: rgba(158, 200, 255, 0.62); }
+.controller-head h2 { margin-top: 3px; font-size: 20px; letter-spacing: -0.02em; }
+#controller-close {
+  width: 30px; height: 30px; border: 0; border-radius: 50%; color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.09); font-size: 19px; line-height: 1; cursor: pointer;
+}
+#controller-status { margin: 15px 0 12px; font-size: 12.5px; color: #ffcf8a; line-height: 1.45; }
+.controller-steps { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.controller-steps li {
+  display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 9px;
+  padding: 10px; border-radius: 13px; background: rgba(255, 255, 255, 0.055);
+  border: 1px solid transparent; color: rgba(255, 255, 255, 0.62);
+}
+.controller-steps li.current { border-color: rgba(255, 207, 138, 0.55); background: rgba(255, 207, 138, 0.08); }
+.controller-steps li.learned { color: rgba(255, 255, 255, 0.9); }
+.step-number {
+  display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1); font-size: 11px; font-weight: 700;
+}
+.controller-steps li.learned .step-number { color: #10251b; background: #9ef3c9; }
+.controller-steps b { font-size: 13px; }
+.controller-binding { font-size: 11px; color: rgba(255, 255, 255, 0.42); }
+.controller-mode {
+  display: flex; justify-content: space-between; align-items: center; margin-top: 13px; padding: 11px 2px;
+  cursor: pointer;
+}
+.controller-mode b, .controller-mode small { display: block; }
+.controller-mode b { font-size: 13px; }
+.controller-mode small { margin-top: 2px; color: rgba(255, 255, 255, 0.4); font-size: 10.5px; }
+.controller-mode input { width: 34px; height: 20px; accent-color: #75dfae; }
+.controller-actions { display: flex; gap: 8px; }
+.controller-actions button {
+  flex: 1; padding: 10px 12px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 12px;
+  color: rgba(255, 255, 255, 0.84); background: rgba(255, 255, 255, 0.09); font: inherit; font-size: 12px; cursor: pointer;
+}
+.controller-actions button:hover { background: rgba(255, 255, 255, 0.15); }
+#controller-reset { flex: 0 0 auto; color: rgba(255, 190, 180, 0.75); }
+.controller-note { margin-top: 13px; font-size: 10.5px; line-height: 1.5; color: rgba(255, 255, 255, 0.36); }
 #swipe-pulse {
   position: absolute; top: 50%; z-index: 20; opacity: 0; pointer-events: none;
   font-size: 84px; font-weight: 300; color: rgba(255, 255, 255, 0.82);
