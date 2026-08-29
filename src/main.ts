@@ -78,11 +78,108 @@ if (demo !== null) {
     { id: "m6", kind: "email", title: "Payout of HK$4,120 initiated", subtitle: "Stripe", badge: "Yesterday", preview: "Your payout is on the way to your bank account ending 021." },
   ]);
 
+  const fridays = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1, 1);
+    const out: string[] = [];
+    while (out.length < 3) {
+      if (d.getDay() === 5) out.push(d.toISOString().slice(0, 10));
+      d.setDate(d.getDate() + 1);
+    }
+    return out;
+  })();
+
+  const seedOptions = () =>
+    store.showStack("options", "Invitation designs", "option", [
+      {
+        id: "1",
+        kind: "option",
+        title: "Aurora",
+        badge: "Option 1",
+        design: {
+          template: "aurora",
+          eventTitle: "OMP Annual Gathering",
+          dateLine: `Fri ${fridays[2].slice(8)}/${fridays[2].slice(5, 7)} · 7:00 PM`,
+          venue: "The Hive · Wan Chai",
+          tagline: "An evening of AI, friends & dim sum",
+          accent: "#8b5cf6",
+          logoText: "OMP",
+        },
+      },
+      {
+        id: "2",
+        kind: "option",
+        title: "Mono",
+        badge: "Option 2",
+        design: {
+          template: "mono",
+          eventTitle: "OMP Annual Gathering",
+          dateLine: `Fri ${fridays[2].slice(8)}/${fridays[2].slice(5, 7)} · 7:00 PM`,
+          venue: "The Hive · Wan Chai",
+          tagline: "You are warmly invited",
+          accent: "#c2410c",
+          logoText: "OMP",
+        },
+      },
+      {
+        id: "3",
+        kind: "option",
+        title: "Neon",
+        badge: "Option 3",
+        design: {
+          template: "neon",
+          eventTitle: "OMP ANNUAL GATHERING",
+          dateLine: `FRI ${fridays[2].slice(8)}/${fridays[2].slice(5, 7)} · 19:00`,
+          venue: "THE HIVE · WAN CHAI",
+          tagline: "one night · all signal",
+          accent: "#22d3ee",
+          logoText: "OMP",
+        },
+      },
+    ]);
+
+  const seedPeople = () =>
+    store.showStack(
+      "people",
+      "Recipients",
+      "person",
+      [
+        { name: "Kelvin Chan", detail: "kelvin@eventco.hk", tag: "VIP" },
+        { name: "Michelle Wong", detail: "michelle.w@nexadigital.com" },
+        { name: "Jason Lam", detail: "jason@lamandpartners.hk" },
+        { name: "Priya Sharma", detail: "priya@fintechhub.asia", tag: "Speaker" },
+        { name: "David Cheung", detail: "d.cheung@hkstartups.org" },
+        { name: "Emily Ho", detail: "emily.ho@creativelabs.hk" },
+        { name: "Marcus Ng", detail: "marcus@growthworks.io" },
+        { name: "Sarah Liu", detail: "sarah.liu@mediapulse.cn", tag: "Press" },
+        { name: "Tommy Yuen", detail: "tommy@yuenventures.hk" },
+        { name: "Grace Tam", detail: "grace.tam@edufuture.hk" },
+        { name: "Ben Kwok", detail: "ben@kwokdesign.com" },
+        { name: "Fiona Lee", detail: "fiona@omp.asia", tag: "Team" },
+      ].map((p, i) => ({ id: String(i), kind: "person" as const, title: p.name, subtitle: p.detail, badge: p.tag })),
+      "grid",
+    );
+
   if (demo === "drive") store.switchTo("drive");
   else if (demo === "calendar") store.switchTo("calendar");
   else if (demo === "month") {
     store.switchTo("calendar");
     store.setCalendarView("month");
   } else if (demo === "reader") store.openItem("m1");
+  else if (demo === "slots")
+    store.proposeSlots(
+      [
+        { date: fridays[0], time: "19:00", end: "22:00", label: "evening fully free" },
+        { date: fridays[1], time: "19:30", end: "22:30", label: "free after 7pm" },
+        { date: fridays[2], time: "19:00", end: "23:00", label: "whole evening free" },
+      ],
+      "month",
+    );
+  else if (demo === "options") seedOptions();
+  else if (demo === "chosen") {
+    seedOptions();
+    store.selectOption(1);
+  } else if (demo === "people") seedPeople();
+  else if (demo === "done") store.showDone("Invitations sent", "12 people · Aurora card · via Gmail");
   else store.switchTo("mail");
 }

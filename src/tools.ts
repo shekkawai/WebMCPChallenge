@@ -159,6 +159,115 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
       },
     },
     {
+      name: "surface_show_options",
+      description:
+        "Present 2–4 visual design options as real rendered cards for the user to choose between — e.g. event invitation card designs. The surface draws each poster itself from your copy and styling (no image generation, text stays editable). The user can swipe between options, enlarge one, and pick by number or name.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "dock label, e.g. 'Invitation designs'" },
+          options: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string", description: "short option name, e.g. 'Aurora'" },
+                template: { type: "string", enum: ["aurora", "mono", "neon"], description: "poster style: aurora = vivid gradient, mono = minimal light, neon = dark with glow" },
+                eventTitle: { type: "string" },
+                dateLine: { type: "string", description: "e.g. 'Fri 25 Sep · 7:00 PM'" },
+                venue: { type: "string" },
+                tagline: { type: "string" },
+                accent: { type: "string", description: "CSS color for the accent, e.g. '#8b5cf6'" },
+                logoText: { type: "string", description: "short logo mark, e.g. 'OMP'" },
+              },
+              required: ["name", "template", "eventTitle", "dateLine"],
+            },
+          },
+        },
+        required: ["options"],
+      },
+      execute: ({ title, options }: any) => {
+        store.showStack(
+          "options",
+          title ?? "Designs",
+          "option",
+          options.map((o: any, i: number) => ({
+            id: String(i + 1),
+            kind: "option",
+            title: o.name,
+            badge: `Option ${i + 1}`,
+            design: {
+              template: o.template,
+              eventTitle: o.eventTitle,
+              dateLine: o.dateLine,
+              venue: o.venue,
+              tagline: o.tagline,
+              accent: o.accent,
+              logoText: o.logoText,
+            },
+          })),
+        );
+        return { rendered: options.length, hint: "user picks by swiping + saying a number, or you call option_select" };
+      },
+    },
+    {
+      name: "surface_show_people",
+      description:
+        "Render people — invite recipients, contacts, a CRM segment — as a grid of name chips so the user can review a send list at a glance. Fetch them yourself (contacts connector, CRM, spreadsheet) and pass name plus optional detail.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "dock label, e.g. 'Recipients'. Default 'People'" },
+          people: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                detail: { type: "string", description: "e.g. email or company" },
+                tag: { type: "string", description: "short badge, e.g. 'VIP'" },
+              },
+              required: ["name"],
+            },
+          },
+        },
+        required: ["people"],
+      },
+      execute: ({ title, people }: any) => {
+        store.showStack(
+          "people",
+          title ?? "People",
+          "person",
+          people.map((p: any, i: number) => ({
+            id: String(i),
+            kind: "person",
+            title: p.name,
+            subtitle: p.detail,
+            badge: p.tag,
+          })),
+          "grid",
+        );
+        return { rendered: people.length };
+      },
+    },
+    {
+      name: "surface_confirm_done",
+      description:
+        "Show a full-screen confirmation — a big check with a message — after you completed an action (event created, invitations sent, reply drafted). Use `detail` for the specifics. The user swipes to dismiss it.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          message: { type: "string", description: "e.g. 'Invitations sent'" },
+          detail: { type: "string", description: "e.g. '12 people · Card One · via Gmail'" },
+        },
+        required: ["message"],
+      },
+      execute: ({ message, detail }: any) => {
+        store.showDone(message, detail);
+        return { shown: true };
+      },
+    },
+    {
       name: "surface_switch",
       description:
         "Bring an already-rendered surface to the front: 'calendar' or a stack id (e.g. 'mail', 'drive'). Call surface_get_view_state first to see what surfaces exist.",
@@ -211,7 +320,70 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
         return { view };
       },
     },
+    {
+      name: "calendar_propose_slots",
+      description:
+        "Highlight numbered proposed time slots on the on-screen calendar (max 6) so the user can compare and pick one by number. Check the user's real availability via your calendar connector first, then propose. The calendar jumps to the first slot; the user can still swipe to other weeks/months and the highlights stay on their dates.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          view: { type: "string", enum: ["week", "month"], description: "optional view to show the proposals in" },
+          slots: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                date: { type: "string", description: "ISO date" },
+                time: { type: "string", description: "e.g. 19:00" },
+                end: { type: "string", description: "e.g. 22:00" },
+                label: { type: "string", description: "short reason, e.g. 'evening fully free'" },
+              },
+              required: ["date", "time"],
+            },
+          },
+        },
+        required: ["slots"],
+      },
+      execute: ({ slots, view }: any) => {
+        const proposals = store.proposeSlots(slots, view);
+        return { proposals: proposals.map((p) => ({ slot: p.n, date: p.date, time: p.time })) };
+      },
+    },
   ];
+
+  const confirmSlotTool: ToolDef = {
+    name: "calendar_confirm_slot",
+    description:
+      "Confirm one of the currently proposed slots by its number and add the event to the on-screen calendar. Also create the event in the user's real calendar via your connector when you can. Shows an 'Event added' confirmation.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        slot: { type: "number", description: "the proposal number, 1-based" },
+        title: { type: "string", description: "event title" },
+      },
+      required: ["slot", "title"],
+    },
+    execute: ({ slot, title }: any) => {
+      const event = store.confirmSlot(slot, title);
+      return event ? { added: event } : { error: "no such proposed slot" };
+    },
+  };
+
+  const selectOptionTool: ToolDef = {
+    name: "option_select",
+    description:
+      "Mark one of the displayed options as the user's choice — by number ('1'), id, or name ('Aurora'). Omit the argument to choose the currently focused option (what the user swiped to). Returns the chosen option.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        option: { type: "string", description: "option number, id, or name; omit for the focused one" },
+      },
+    },
+    execute: ({ option }: any) => {
+      const chosen = store.selectOption(option);
+      return chosen ? { chosen: { id: chosen.id, name: chosen.title } } : { error: "no options on screen" };
+    },
+  };
 
   const openTool: ToolDef = {
     name: "surface_open_item",
@@ -240,13 +412,23 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
     },
   };
 
-  let lastView = "";
+  let lastSig = "";
   store.subscribe((s) => {
-    if (s.view === lastView) return;
-    lastView = s.view;
-    if (s.view === "calendar") mcp.setTools([...base, ...calendarTools]);
-    else if (s.view === "stack") mcp.setTools([...base, openTool]);
-    else if (s.view === "reader") mcp.setTools([...base, openTool, closeTool]);
-    else mcp.setTools(base);
+    const stack = store.activeStack();
+    const stackOn = s.view === "stack" || s.view === "reader";
+    const optionsOn = stackOn && stack?.kind === "option";
+    const sig = [s.view, s.proposals.length > 0, optionsOn].join("|");
+    if (sig === lastSig) return;
+    lastSig = sig;
+    const tools = [...base];
+    if (s.view === "calendar") {
+      tools.push(...calendarTools);
+      if (s.proposals.length) tools.push(confirmSlotTool);
+    } else if (stackOn) {
+      tools.push(openTool);
+      if (s.view === "reader") tools.push(closeTool);
+      if (optionsOn) tools.push(selectOptionTool);
+    }
+    mcp.setTools(tools);
   });
 }

@@ -38,13 +38,20 @@ The agent's connectors know your data; the page knows your body and your focus. 
 | `surface_get_view_state` | page → agent | What the user is looking at (deixis: "this one") |
 | `surface_speak` | agent → page | Speak through the surface's own speaker |
 | `surface_set_calendar_view` | agent → page | Week/month toggle — *only while the calendar is on screen* |
+| `calendar_propose_slots` | agent → page | Paint numbered proposed time slots onto the calendar — *calendar only* |
+| `calendar_confirm_slot` | agent → page | Confirm a proposed slot into an event — *only while proposals exist* |
+| `surface_show_options` | agent → page | Render 2–4 designed option cards (e.g. invitation posters) — the page draws them, text stays editable |
+| `option_select` | agent → page | Mark the chosen option — *only while options are shown* |
+| `surface_show_people` | agent → page | Render recipients/contacts as a name-chip grid |
+| `surface_confirm_done` | agent → page | Full-screen check confirmation after an action completes |
 
 ## Run
 
 ```bash
 bun install
 bun run dev
-# open http://localhost:5173/?demo=mail   (also: drive | calendar | month | reader)
+# open http://localhost:5173/?demo=mail
+# (also: drive | calendar | month | reader | slots | options | chosen | people | done)
 # ← → keys mirror the palm swipe; window.__surface exposes store + adapter
 ```
 
@@ -54,6 +61,7 @@ bun run dev
 - [x] Universal stack/card model; Mail, Drive, and generic surfaces; calendar week + month
 - [x] Reader mode (single email / doc full-screen), dock, deixis via `surface_get_view_state`
 - [x] Glass UI (direction C: card deck, Apple-glass polish)
+- [x] Event-planning flow: slot proposals → confirm-to-event, rendered invitation-card options, recipients grid, sent confirmation
 - [ ] Camera palm-swipe (port from [dsh-jarvis-hud](https://github.com/shekkawai/dsh-jarvis-hud), MIT)
 - [ ] Verify tool calls end-to-end in ChatGPT desktop in-app browser
 - [ ] Demo video

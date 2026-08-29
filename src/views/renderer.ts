@@ -1,4 +1,4 @@
-import type { CardItem, Stack, State, Store } from "../state/store";
+import type { CardItem, InviteDesign, Stack, State, Store } from "../state/store";
 
 const esc = (s: string) =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -14,9 +14,16 @@ const ICONS: Record<string, string> = {
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
   doc:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M8.5 12h7M8.5 15.5h7M8.5 8.5H11"/></svg>',
+  person:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.2-3.5 3.8-5 7-5s5.8 1.5 7 5"/></svg>',
+  option:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="12" height="16" rx="2"/><path d="M18 6h1a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-6"/></svg>',
   generic:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg>',
 };
+
+const CHECK =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5 10-11"/></svg>';
 
 const icon = (kind?: string) => `<span class="ic">${ICONS[kind ?? "generic"] ?? ICONS.generic}</span>`;
 
@@ -39,21 +46,34 @@ const fmtDay = (iso: string) => {
   return { wd: WD[(d.getDay() + 6) % 7], n: d.getDate(), month: d.toLocaleString("en", { month: "short" }) };
 };
 
+function calNote(s: State): string {
+  if (!s.proposals.length) return "";
+  return `<span class="calnote">${s.proposals.length} proposed slot${s.proposals.length > 1 ? "s" : ""} — say a number</span>`;
+}
+
 function weekHTML(s: State): string {
   const days = weekDays(s.anchor);
   const a = fmtDay(days[0]);
   const b = fmtDay(days[6]);
   return `
     <div class="calwrap">
-      <div class="calhead">${a.month} ${a.n} — ${b.month} ${b.n}</div>
+      <div class="calhead">${a.month} ${a.n} — ${b.month} ${b.n}${calNote(s)}</div>
       <div class="week">
         ${days
           .map((date) => {
             const f = fmtDay(date);
             const events = s.events.filter((e) => e.date === date);
-            return `<div class="day glass${date === todayISO() ? " today" : ""}">
+            const props = s.proposals.filter((p) => p.date === date);
+            return `<div class="day glass${date === todayISO() ? " today" : ""}${props.length ? " hasprop" : ""}">
               <div class="dh"><span class="wd">${f.wd}</span><span class="dn">${f.n}</span></div>
               ${events.map((e) => `<div class="ev">${e.time ? `<b>${esc(e.time)}</b>` : ""}${esc(e.title)}</div>`).join("")}
+              ${props
+                .map(
+                  (p) => `<div class="slot"><span class="n">${p.n}</span><b>${esc(p.time)}${p.end ? `–${esc(p.end)}` : ""}</b>${
+                    p.label ? `<span>${esc(p.label)}</span>` : ""
+                  }</div>`,
+                )
+                .join("")}
             </div>`;
           })
           .join("")}
@@ -72,8 +92,10 @@ function monthHTML(s: State): string {
   for (let day = 1; day <= dim; day++) {
     const iso = `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const events = s.events.filter((e) => e.date === iso);
-    cells.push(`<div class="mcell glass${iso === todayISO() ? " today" : ""}">
+    const props = s.proposals.filter((p) => p.date === iso);
+    cells.push(`<div class="mcell glass${iso === todayISO() ? " today" : ""}${props.length ? " hasprop" : ""}">
       <span class="dn">${day}</span>
+      ${props.length ? `<div class="mprop">${props.map((p) => `<span class="n">${p.n}</span>`).join("")}</div>` : ""}
       ${
         events.length
           ? `<div class="mdots">${events
@@ -86,13 +108,34 @@ function monthHTML(s: State): string {
   }
   return `
     <div class="calwrap">
-      <div class="calhead">${monthName}</div>
+      <div class="calhead">${monthName}${calNote(s)}</div>
       <div class="mhead">${WD.map((w) => `<span>${w}</span>`).join("")}</div>
       <div class="month">${cells.join("")}</div>
     </div>`;
 }
 
+function posterHTML(d: InviteDesign, large: boolean): string {
+  const accent = d.accent ?? "#8b5cf6";
+  return `<div class="poster ${d.template}${large ? " lg" : ""}" style="--accent:${esc(accent)}">
+      ${d.logoText ? `<span class="plogo">${esc(d.logoText)}</span>` : ""}
+      <div class="pmid">
+        <div class="ptitle">${esc(d.eventTitle)}</div>
+        <div class="pdate">${esc(d.dateLine)}</div>
+        ${d.venue ? `<div class="pvenue">${esc(d.venue)}</div>` : ""}
+      </div>
+      ${d.tagline ? `<div class="ptag">${esc(d.tagline)}</div>` : ""}
+    </div>`;
+}
+
 function cardInner(item: CardItem, fallbackKind: string): string {
+  if (item.design) {
+    return `
+      <div class="k">${icon("option")}<span>${esc(item.badge ?? "option")}</span>${
+        item.selected ? `<span class="chosen">${CHECK} chosen</span>` : ""
+      }</div>
+      ${posterHTML(item.design, false)}
+      <div class="oname">${esc(item.title)}</div>`;
+  }
   const kind = item.kind ?? fallbackKind;
   return `
     <div class="k">${icon(kind)}<span>${esc(kind)}</span>${item.badge ? `<span class="badge">${esc(item.badge)}</span>` : ""}</div>
@@ -107,16 +150,58 @@ function deckHTML(stack: Stack): string {
       const off = i - stack.focusIndex;
       const cls =
         off === 0 ? "focus" : off === -1 ? "prev" : off === 1 ? "next" : off < -1 ? "far-left" : "far-right";
-      return `<article class="card glass ${cls}">${cardInner(item, stack.kind)}</article>`;
+      return `<article class="card glass ${cls}${item.design ? " opt" : ""}${item.selected ? " sel" : ""}">${cardInner(item, stack.kind)}</article>`;
     })
     .join("");
   return `<div class="deck">${cards}</div>
     <div class="counter">${esc(stack.title)} · ${stack.focusIndex + 1} of ${stack.items.length}</div>`;
 }
 
+function gridHTML(stack: Stack): string {
+  const initials = (name: string) =>
+    name
+      .split(/\s+/)
+      .map((w) => w[0] ?? "")
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+  return `<div class="gridwrap">
+      <div class="calhead">${esc(stack.title)}<span class="calnote">${stack.items.length} people</span></div>
+      <div class="pgrid">
+        ${stack.items
+          .map(
+            (it, i) => `<div class="pchip glass${i === stack.focusIndex ? " focus" : ""}">
+              <span class="av">${esc(initials(it.title))}</span>
+              <div class="pinfo"><b>${esc(it.title)}</b>${it.subtitle ? `<span>${esc(it.subtitle)}</span>` : ""}</div>
+              ${it.badge ? `<span class="badge">${esc(it.badge)}</span>` : ""}
+            </div>`,
+          )
+          .join("")}
+      </div>
+    </div>`;
+}
+
+function doneHTML(s: State): string {
+  return `<section class="done">
+      <div class="ring">${CHECK}</div>
+      <h1>${esc(s.done?.message ?? "Done")}</h1>
+      ${s.done?.detail ? `<p>${esc(s.done.detail)}</p>` : ""}
+      <div class="rhint">swipe to continue</div>
+    </section>`;
+}
+
 function readerHTML(stack: Stack): string {
   const item = stack.items[stack.focusIndex];
   if (!item) return "";
+  if (item.design) {
+    return `<section class="reader glass optreader">
+        <div class="k">${icon("option")}<span>${esc(item.badge ?? "option")}</span>${
+          item.selected ? `<span class="chosen">${CHECK} chosen</span>` : ""
+        }</div>
+        ${posterHTML(item.design, true)}
+        <div class="rhint">say "this one" · swipe for next · "close"</div>
+      </section>`;
+  }
   const kind = item.kind ?? stack.kind;
   return `<section class="reader glass">
       <div class="k">${icon(kind)}<span>${esc(kind)}</span>${item.badge ? `<span class="badge">${esc(item.badge)}</span>` : ""}</div>
@@ -196,8 +281,9 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
     dock.innerHTML = dockHTML(s);
     dock.style.display = dockHTML(s) ? "flex" : "none";
     const stack = store.activeStack();
-    if (s.view === "calendar") stage.innerHTML = s.calendarView === "week" ? weekHTML(s) : monthHTML(s);
-    else if (s.view === "stack" && stack) stage.innerHTML = deckHTML(stack);
+    if (s.view === "done") stage.innerHTML = doneHTML(s);
+    else if (s.view === "calendar") stage.innerHTML = s.calendarView === "week" ? weekHTML(s) : monthHTML(s);
+    else if (s.view === "stack" && stack) stage.innerHTML = stack.layout === "grid" ? gridHTML(stack) : deckHTML(stack);
     else if (s.view === "reader" && stack) stage.innerHTML = readerHTML(stack);
     else
       stage.innerHTML = `<div class="hello glass">

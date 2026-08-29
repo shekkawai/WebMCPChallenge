@@ -1,4 +1,14 @@
-export type CardKind = "email" | "event" | "file" | "folder" | "doc" | "generic";
+export type CardKind = "email" | "event" | "file" | "folder" | "doc" | "person" | "option" | "generic";
+
+export interface InviteDesign {
+  template: "aurora" | "mono" | "neon";
+  eventTitle: string;
+  dateLine: string;
+  venue?: string;
+  tagline?: string;
+  accent?: string;
+  logoText?: string;
+}
 
 export interface CardItem {
   id: string;
@@ -8,6 +18,8 @@ export interface CardItem {
   preview?: string;
   content?: string;
   badge?: string;
+  design?: InviteDesign;
+  selected?: boolean;
 }
 
 export interface Stack {
@@ -16,6 +28,7 @@ export interface Stack {
   kind: CardKind;
   items: CardItem[];
   focusIndex: number;
+  layout?: "deck" | "grid";
 }
 
 export interface CalendarEvent {
@@ -24,7 +37,15 @@ export interface CalendarEvent {
   title: string;
 }
 
-export type ViewName = "idle" | "calendar" | "stack" | "reader";
+export interface SlotProposal {
+  n: number;
+  date: string;
+  time: string;
+  end?: string;
+  label?: string;
+}
+
+export type ViewName = "idle" | "calendar" | "stack" | "reader" | "done";
 export type CalendarView = "week" | "month";
 
 export interface State {
@@ -35,6 +56,8 @@ export interface State {
   anchor: string;
   events: CalendarEvent[];
   hasCalendar: boolean;
+  proposals: SlotProposal[];
+  done: { message: string; detail?: string; returnTo: ViewName } | null;
 }
 
 type Listener = (s: State) => void;
@@ -50,6 +73,8 @@ export class Store {
     anchor: todayISO(),
     events: [],
     hasCalendar: false,
+    proposals: [],
+    done: null,
   };
 
   private listeners: Listener[] = [];
@@ -79,17 +104,81 @@ export class Store {
     this.emit();
   }
 
+  // Numbered slot proposals painted onto the calendar. The calendar jumps to
+  // the first slot so the highlights are on screen; swiping away and back is
+  // fine because proposals live on dates, not on the viewport.
+  proposeSlots(slots: Omit<SlotProposal, "n">[], view?: CalendarView) {
+    const proposals = slots.slice(0, 6).map((s, i) => ({ ...s, n: i + 1 }));
+    this.state = {
+      ...this.state,
+      proposals,
+      view: "calendar",
+      hasCalendar: true,
+      calendarView: view ?? this.state.calendarView,
+      anchor: proposals[0]?.date ?? this.state.anchor,
+    };
+    this.emit();
+    return proposals;
+  }
+
+  confirmSlot(n: number, title: string): CalendarEvent | null {
+    const p = this.state.proposals.find((x) => x.n === n) ?? this.state.proposals[0];
+    if (!p) return null;
+    const event: CalendarEvent = { date: p.date, time: p.time, title };
+    this.state = {
+      ...this.state,
+      events: [...this.state.events, event],
+      proposals: [],
+      anchor: p.date,
+      view: "done",
+      done: { message: "Event added", detail: `${title} · ${p.date} ${p.time}`, returnTo: "calendar" },
+    };
+    this.emit();
+    return event;
+  }
+
+  showDone(message: string, detail?: string) {
+    const returnTo = this.state.view === "done" ? (this.state.done?.returnTo ?? "idle") : this.state.view;
+    this.state = { ...this.state, view: "done", done: { message, detail, returnTo } };
+    this.emit();
+  }
+
+  dismissDone() {
+    if (this.state.view !== "done") return;
+    this.state = { ...this.state, view: this.state.done?.returnTo ?? "idle", done: null };
+    this.emit();
+  }
+
   // Universal entry point: mail, drive files, or anything the agent wants shown
   // become one shape — a stack of cards. Same id upserts (keeps focus position).
-  showStack(id: string, title: string, kind: CardKind, items: CardItem[]) {
+  showStack(id: string, title: string, kind: CardKind, items: CardItem[], layout?: "deck" | "grid") {
     const existing = this.state.stacks.find((s) => s.id === id);
     const focusIndex = existing ? Math.min(existing.focusIndex, Math.max(items.length - 1, 0)) : 0;
-    const stack: Stack = { id, title, kind, items, focusIndex };
+    const stack: Stack = { id, title, kind, items, focusIndex, layout: layout ?? existing?.layout ?? "deck" };
     const stacks = existing
       ? this.state.stacks.map((s) => (s.id === id ? stack : s))
       : [...this.state.stacks, stack];
     this.state = { ...this.state, stacks, activeStackId: id, view: "stack" };
     this.emit();
+  }
+
+  selectOption(ref?: string | number): CardItem | null {
+    const stack = this.activeStack();
+    if (!stack || !stack.items.length) return null;
+    let idx = stack.focusIndex;
+    const asNum = typeof ref === "number" ? ref : ref && /^\d+$/.test(ref) ? Number(ref) : null;
+    if (asNum !== null) idx = asNum - 1;
+    else if (typeof ref === "string" && ref) {
+      const q = ref.toLowerCase();
+      const i = stack.items.findIndex((it) => it.id === ref || it.title.toLowerCase() === q);
+      if (i >= 0) idx = i;
+    }
+    if (!stack.items[idx]) return null;
+    const items = stack.items.map((it, i) => ({ ...it, selected: i === idx }));
+    const stacks = this.state.stacks.map((s) => (s.id === stack.id ? { ...s, items, focusIndex: idx } : s));
+    this.state = { ...this.state, stacks, view: "stack" };
+    this.emit();
+    return items[idx];
   }
 
   switchTo(target: string) {
@@ -132,10 +221,13 @@ export class Store {
   }
 
   // One verb for the palm swipe, whatever is on screen:
-  // stack/reader -> next/previous card, calendar -> next/previous week or month.
+  // stack/reader -> next/previous card, calendar -> next/previous week or month,
+  // done -> dismiss the confirmation.
   swipe(dir: 1 | -1) {
     const s = this.state;
-    if (s.view === "stack" || s.view === "reader") {
+    if (s.view === "done") {
+      this.dismissDone();
+    } else if (s.view === "stack" || s.view === "reader") {
       const stack = this.activeStack();
       if (!stack || !stack.items.length) return;
       const focusIndex = Math.min(Math.max(stack.focusIndex + dir, 0), stack.items.length - 1);
@@ -163,16 +255,22 @@ export class Store {
         ...s.stacks.map((st) => ({ id: st.id, title: st.title, items: st.items.length })),
       ],
       calendar: s.view === "calendar" ? { calendarView: s.calendarView, anchor: s.anchor } : undefined,
+      proposals: s.proposals.length
+        ? s.proposals.map((p) => ({ slot: p.n, date: p.date, time: p.time, label: p.label }))
+        : undefined,
       stack:
         stack && (s.view === "stack" || s.view === "reader")
           ? {
               id: stack.id,
               title: stack.title,
+              layout: stack.layout ?? "deck",
               position: `${stack.focusIndex + 1} of ${stack.items.length}`,
               focusedItem: stack.items[stack.focusIndex] ?? null,
+              selectedItem: stack.items.find((it) => it.selected) ?? null,
             }
           : undefined,
       readerOpen: s.view === "reader",
+      confirmation: s.view === "done" ? s.done?.message : undefined,
     };
   }
 }

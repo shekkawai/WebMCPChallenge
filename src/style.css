@@ -165,3 +165,128 @@ body {
 }
 #feed li { margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #feed li:first-child { color: rgba(255, 255, 255, 0.55); }
+
+/* ---- proposed slots ---- */
+.calnote {
+  display: inline-block; margin-left: 14px; padding: 4px 13px; border-radius: 99px;
+  background: rgba(255, 207, 138, 0.14); border: 1px solid rgba(255, 207, 138, 0.3);
+  color: #ffcf8a; font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+}
+.day.hasprop, .mcell.hasprop {
+  border-color: rgba(255, 207, 138, 0.55);
+  box-shadow: 0 0 0 1px rgba(255, 207, 138, 0.25), 0 0 34px rgba(255, 190, 100, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.slot {
+  position: relative; margin-top: 8px; padding: 9px 10px 9px 34px;
+  border-radius: 11px; font-size: 12.5px; line-height: 1.35;
+  background: rgba(255, 207, 138, 0.13); border: 1px solid rgba(255, 207, 138, 0.4);
+  animation: slotin 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.slot b { display: block; font-weight: 650; color: #ffcf8a; font-size: 11.5px; margin-bottom: 2px; }
+.slot span:not(.n) { color: rgba(255, 255, 255, 0.6); font-size: 11.5px; }
+.slot .n, .mprop .n {
+  display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+  background: #ffcf8a; color: #2a1f0e; font-size: 11.5px; font-weight: 750;
+}
+.slot .n { position: absolute; left: 8px; top: 9px; }
+.mprop { display: flex; gap: 5px; margin-top: 7px; }
+@keyframes slotin { from { opacity: 0; transform: translateY(8px); } }
+
+/* ---- option cards (rendered invitation posters) ---- */
+.card.opt { min-height: 0; padding-bottom: 24px; }
+.card.sel { border-color: rgba(140, 255, 190, 0.5); }
+.chosen {
+  margin-left: auto; display: flex; gap: 5px; align-items: center;
+  color: #8cffbe; letter-spacing: 0.08em; font-size: 11px;
+}
+.chosen svg { width: 13px; height: 13px; }
+.oname { margin-top: 14px; text-align: center; font-size: 13.5px; font-weight: 600; color: rgba(255, 255, 255, 0.6); }
+
+.poster {
+  border-radius: 18px; overflow: hidden; aspect-ratio: 4 / 5; max-height: 46vh; margin: 0 auto;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 24px; position: relative;
+}
+.poster.lg { aspect-ratio: 4 / 5; max-height: 64vh; padding: 34px; }
+.poster .plogo {
+  align-self: flex-start; font-size: 12px; font-weight: 800; letter-spacing: 0.22em;
+  padding: 6px 12px; border-radius: 8px;
+}
+.poster .ptitle { font-weight: 800; letter-spacing: -0.02em; line-height: 1.08; font-size: clamp(22px, 3.2vw, 40px); }
+.poster.lg .ptitle { font-size: clamp(30px, 4vw, 52px); }
+.poster .pdate { margin-top: 12px; font-size: 15px; font-weight: 650; }
+.poster .pvenue { margin-top: 5px; font-size: 13.5px; opacity: 0.85; }
+.poster .ptag { font-size: 12.5px; font-style: italic; opacity: 0.75; }
+
+.poster.aurora {
+  color: #fff;
+  background:
+    radial-gradient(ellipse 120% 90% at 15% 0%, color-mix(in srgb, var(--accent) 85%, #fff 15%), transparent 60%),
+    radial-gradient(ellipse 100% 80% at 100% 100%, color-mix(in srgb, var(--accent) 55%, #04102e 45%), transparent 70%),
+    linear-gradient(160deg, #17123a, #0a0c1e);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.35);
+}
+.poster.aurora .plogo { background: rgba(255, 255, 255, 0.2); }
+.poster.aurora .ptitle { font-family: Georgia, "Times New Roman", serif; }
+
+.poster.mono { color: #17181c; background: #f4f2ec; }
+.poster.mono .plogo { background: #17181c; color: #f4f2ec; }
+.poster.mono .ptitle { letter-spacing: -0.03em; }
+.poster.mono .pdate { color: var(--accent); }
+.poster.mono .pmid { border-top: 2px solid #17181c; padding-top: 16px; }
+
+.poster.neon {
+  color: #fff; background: linear-gradient(170deg, #0b0d14, #101725);
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: inset 0 0 60px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.poster.neon .plogo { border: 1px solid var(--accent); color: var(--accent); }
+.poster.neon .ptitle { color: var(--accent); text-shadow: 0 0 26px color-mix(in srgb, var(--accent) 70%, transparent); }
+.poster.neon .ptag { color: rgba(255, 255, 255, 0.6); }
+
+.optreader { display: flex; flex-direction: column; }
+.optreader .poster { width: 100%; max-width: 440px; }
+
+/* ---- people grid ---- */
+.gridwrap { height: 100%; padding: 0 46px; display: flex; flex-direction: column; overflow: hidden; }
+.pgrid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 13px; align-content: start; overflow: auto; padding-bottom: 12px;
+}
+.pchip {
+  display: flex; gap: 12px; align-items: center; padding: 13px 15px; border-radius: 18px;
+  animation: slotin 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.pchip:nth-child(2) { animation-delay: 0.04s; } .pchip:nth-child(3) { animation-delay: 0.08s; }
+.pchip:nth-child(4) { animation-delay: 0.12s; } .pchip:nth-child(5) { animation-delay: 0.16s; }
+.pchip:nth-child(6) { animation-delay: 0.2s; } .pchip:nth-child(7) { animation-delay: 0.24s; }
+.pchip:nth-child(8) { animation-delay: 0.28s; } .pchip:nth-child(n + 9) { animation-delay: 0.32s; }
+.pchip.focus { background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.35); }
+.pchip .av {
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(150deg, rgba(150, 200, 255, 0.35), rgba(140, 110, 220, 0.35));
+  font-size: 13.5px; font-weight: 700; flex: none;
+}
+.pinfo { min-width: 0; }
+.pinfo b { display: block; font-size: 14.5px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pinfo span { font-size: 12px; color: rgba(255, 255, 255, 0.5); white-space: nowrap; }
+.pchip .badge { flex: none; }
+
+/* ---- done ---- */
+.done {
+  position: absolute; top: 44%; left: 50%; transform: translate(-50%, -50%);
+  text-align: center;
+}
+.done .ring {
+  width: 96px; height: 96px; margin: 0 auto 26px; border-radius: 50%;
+  display: grid; place-items: center; color: #8cffbe;
+  background: rgba(140, 255, 190, 0.1); border: 1.5px solid rgba(140, 255, 190, 0.45);
+  box-shadow: 0 0 60px rgba(140, 255, 190, 0.18);
+  animation: ringin 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.done .ring svg { width: 44px; height: 44px; }
+.done h1 { font-size: 36px; font-weight: 750; letter-spacing: -0.02em; }
+.done p { margin-top: 10px; font-size: 16px; color: rgba(255, 255, 255, 0.6); }
+.done .rhint { margin-top: 26px; }
+@keyframes ringin { from { opacity: 0; transform: scale(0.7); } }
