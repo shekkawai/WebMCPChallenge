@@ -39,8 +39,8 @@ The agent's connectors know your data; the page knows your body and your focus. 
 | `surface_speak` | agent → page | Speak through the surface's own speaker |
 | `surface_set_calendar_view` | agent → page | Week/month toggle — *only while the calendar is on screen* |
 | `calendar_propose_slots` | agent → page | Paint numbered proposed time slots onto the calendar — *calendar only* |
-| `calendar_confirm_slot` | agent → page | Confirm a proposed slot into an event — *only while proposals exist* |
-| `surface_show_options` | agent → page | Render 2–4 designed option cards (e.g. invitation posters) — the page draws them, text stays editable |
+| `calendar_confirm_slot` | agent → page | Confirm a proposed slot; only claim “Event added” after the calendar connector confirms creation — *only while proposals exist* |
+| `surface_show_options` | agent → page | Render 2–4 designed option cards with structured text and optional agent/Drive artwork |
 | `option_select` | agent → page | Mark the chosen option — *only while options are shown* |
 | `surface_show_people` | agent → page | Render recipients/contacts as a name-chip grid |
 | `surface_confirm_done` | agent → page | Full-screen check confirmation after an action completes |
@@ -50,6 +50,7 @@ The agent's connectors know your data; the page knows your body and your focus. 
 
 ```bash
 bun install
+bun run test
 bun run dev
 # open http://localhost:5173/?demo=mail
 # (also: drive | calendar | month | reader | slots | options | chosen | people | done | photo)
@@ -58,7 +59,7 @@ bun run dev
 
 ## Status
 
-- [x] WebMCP adapter (`document.modelContext` / `navigator.modelContext`, dynamic tool sets)
+- [x] WebMCP adapter (`document.modelContext`, AbortSignal-owned dynamic registrations; legacy fallback retained)
 - [x] Universal stack/card model; Mail, Drive, and generic surfaces; calendar week + month
 - [x] Reader mode (single email / doc full-screen), dock, deixis via `surface_get_view_state`
 - [x] Glass UI (direction C: card deck, Apple-glass polish)

@@ -3,6 +3,7 @@ import { WebMCPAdapter } from "./webmcp/adapter";
 import { wireTools } from "./tools";
 import { renderApp } from "./views/renderer";
 import { attachKeyboardSwipe } from "./gesture/swipe";
+import { localDateISO } from "./utils";
 
 const store = new Store();
 const mcp = new WebMCPAdapter();
@@ -25,7 +26,7 @@ if (demo !== null) {
   const iso = (offsetDays: number) => {
     const d = new Date();
     d.setDate(d.getDate() + offsetDays);
-    return d.toISOString().slice(0, 10);
+    return localDateISO(d);
   };
 
   store.showCalendar(
@@ -83,7 +84,7 @@ if (demo !== null) {
     d.setMonth(d.getMonth() + 1, 1);
     const out: string[] = [];
     while (out.length < 3) {
-      if (d.getDay() === 5) out.push(d.toISOString().slice(0, 10));
+      if (d.getDay() === 5) out.push(localDateISO(d));
       d.setDate(d.getDate() + 1);
     }
     return out;
@@ -193,7 +194,7 @@ if (demo !== null) {
           eventTitle: "OMP Annual Gathering",
           dateLine: `Fri ${fridays[2].slice(8)}/${fridays[2].slice(5, 7)} · 7:00 PM`,
           venue: "The Hive · Wan Chai",
-          tagline: "Artwork by your agent — text still editable",
+          tagline: "Artwork by your agent — text remains structured",
           accent: "#f2a65a",
           logoText: "OMP",
           imageUrl: art,
@@ -201,8 +202,7 @@ if (demo !== null) {
       },
     ]);
     store.openItem("1");
-  }
-  else if (demo === "chosen") {
+  } else if (demo === "chosen") {
     seedOptions();
     store.selectOption(1);
   } else if (demo === "people") seedPeople();

@@ -1,4 +1,5 @@
 import type { CardItem, InviteDesign, Stack, State, Store } from "../state/store";
+import { localDateISO, safeCssColor, safeImageUrl } from "../utils";
 
 const esc = (s: string) =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -27,8 +28,6 @@ const CHECK =
 
 const icon = (kind?: string) => `<span class="ic">${ICONS[kind ?? "generic"] ?? ICONS.generic}</span>`;
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
-
 function weekDays(anchor: string): string[] {
   const d = new Date(anchor + "T00:00:00");
   const day = (d.getDay() + 6) % 7;
@@ -36,7 +35,7 @@ function weekDays(anchor: string): string[] {
   return Array.from({ length: 7 }, (_, i) => {
     const x = new Date(d);
     x.setDate(d.getDate() + i);
-    return x.toISOString().slice(0, 10);
+    return localDateISO(x);
   });
 }
 
@@ -64,7 +63,7 @@ function weekHTML(s: State): string {
             const f = fmtDay(date);
             const events = s.events.filter((e) => e.date === date);
             const props = s.proposals.filter((p) => p.date === date);
-            return `<div class="day glass${date === todayISO() ? " today" : ""}${props.length ? " hasprop" : ""}">
+            return `<div class="day glass${date === localDateISO() ? " today" : ""}${props.length ? " hasprop" : ""}">
               <div class="dh"><span class="wd">${f.wd}</span><span class="dn">${f.n}</span></div>
               ${events.map((e) => `<div class="ev">${e.time ? `<b>${esc(e.time)}</b>` : ""}${esc(e.title)}</div>`).join("")}
               ${props
@@ -93,7 +92,7 @@ function monthHTML(s: State): string {
     const iso = `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const events = s.events.filter((e) => e.date === iso);
     const props = s.proposals.filter((p) => p.date === iso);
-    cells.push(`<div class="mcell glass${iso === todayISO() ? " today" : ""}${props.length ? " hasprop" : ""}">
+    cells.push(`<div class="mcell glass${iso === localDateISO() ? " today" : ""}${props.length ? " hasprop" : ""}">
       <span class="dn">${day}</span>
       ${props.length ? `<div class="mprop">${props.map((p) => `<span class="n">${p.n}</span>`).join("")}</div>` : ""}
       ${
@@ -115,9 +114,10 @@ function monthHTML(s: State): string {
 }
 
 function posterHTML(d: InviteDesign, large: boolean): string {
-  const accent = d.accent ?? "#8b5cf6";
-  return `<div class="poster ${d.template}${large ? " lg" : ""}${d.imageUrl ? " has-img" : ""}" style="--accent:${esc(accent)}">
-      ${d.imageUrl ? `<img class="pimg" src="${esc(d.imageUrl)}" alt="" /><div class="pscrim"></div>` : ""}
+  const accent = safeCssColor(d.accent) ?? "#8b5cf6";
+  const imageUrl = safeImageUrl(d.imageUrl);
+  return `<div class="poster ${d.template}${large ? " lg" : ""}${imageUrl ? " has-img" : ""}" style="--accent:${esc(accent)}">
+      ${imageUrl ? `<img class="pimg" src="${esc(imageUrl)}" alt="" referrerpolicy="no-referrer" /><div class="pscrim"></div>` : ""}
       ${d.logoText ? `<span class="plogo">${esc(d.logoText)}</span>` : ""}
       <div class="pmid">
         <div class="ptitle">${esc(d.eventTitle)}</div>
@@ -138,15 +138,19 @@ function cardInner(item: CardItem, fallbackKind: string): string {
       <div class="oname">${esc(item.title)}</div>`;
   }
   const kind = item.kind ?? fallbackKind;
+  const imageUrl = safeImageUrl(item.imageUrl);
   return `
     <div class="k">${icon(kind)}<span>${esc(kind)}</span>${item.badge ? `<span class="badge">${esc(item.badge)}</span>` : ""}</div>
-    ${item.imageUrl ? `<img class="thumb" src="${esc(item.imageUrl)}" alt="" />` : ""}
+    ${imageUrl ? `<img class="thumb" src="${esc(imageUrl)}" alt="${esc(item.title)}" referrerpolicy="no-referrer" />` : ""}
     <h2>${esc(item.title)}</h2>
     ${item.subtitle ? `<div class="sub">${esc(item.subtitle)}</div>` : ""}
     ${item.preview ? `<p class="prevw">${esc(item.preview)}</p>` : ""}`;
 }
 
 function deckHTML(stack: Stack): string {
+  if (!stack.items.length) {
+    return `<div class="hello glass"><h1>${esc(stack.title)}</h1><p>No items to show.</p></div><div class="counter">0 items</div>`;
+  }
   const cards = stack.items
     .map((item, i) => {
       const off = i - stack.focusIndex;
@@ -205,11 +209,12 @@ function readerHTML(stack: Stack): string {
       </section>`;
   }
   const kind = item.kind ?? stack.kind;
+  const imageUrl = safeImageUrl(item.imageUrl);
   return `<section class="reader glass">
       <div class="k">${icon(kind)}<span>${esc(kind)}</span>${item.badge ? `<span class="badge">${esc(item.badge)}</span>` : ""}</div>
       <h1>${esc(item.title)}</h1>
       ${item.subtitle ? `<div class="sub">${esc(item.subtitle)}</div>` : ""}
-      ${item.imageUrl ? `<img class="rimg" src="${esc(item.imageUrl)}" alt="" />` : ""}
+      ${imageUrl ? `<img class="rimg" src="${esc(imageUrl)}" alt="${esc(item.title)}" referrerpolicy="no-referrer" />` : ""}
       <div class="body">${esc(item.content ?? item.preview ?? "")}</div>
       <div class="rhint">say "close" · swipe for next</div>
     </section>`;
@@ -281,8 +286,9 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
   });
 
   store.subscribe((s) => {
-    dock.innerHTML = dockHTML(s);
-    dock.style.display = dockHTML(s) ? "flex" : "none";
+    const dockContent = dockHTML(s);
+    dock.innerHTML = dockContent;
+    dock.style.display = dockContent ? "flex" : "none";
     const stack = store.activeStack();
     if (s.view === "done") stage.innerHTML = doneHTML(s);
     else if (s.view === "calendar") stage.innerHTML = s.calendarView === "week" ? weekHTML(s) : monthHTML(s);

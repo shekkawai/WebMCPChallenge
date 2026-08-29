@@ -1,0 +1,69 @@
+import { describe, expect, test } from "bun:test";
+import { Store } from "../src/state/store";
+import { wireTools } from "../src/tools";
+import { WebMCPAdapter, type ModelContext } from "../src/webmcp/adapter";
+
+class FakeContext implements ModelContext {
+  tools = new Map<string, any>();
+
+  registerTool(tool: any, options?: { signal?: AbortSignal }): Promise<void> {
+    if (this.tools.has(tool.name)) return Promise.reject(new DOMException("duplicate", "InvalidStateError"));
+    this.tools.set(tool.name, tool);
+    options?.signal?.addEventListener("abort", () => this.tools.delete(tool.name), { once: true });
+    return Promise.resolve();
+  }
+}
+
+describe("surface tool flow", () => {
+  test("tracks view-scoped tools and does not fake an external calendar write", async () => {
+    const store = new Store();
+    const context = new FakeContext();
+    const adapter = new WebMCPAdapter(context);
+    wireTools(store, adapter);
+
+    expect(context.tools.has("surface_set_calendar_view")).toBeFalse();
+    await context.tools.get("surface_show_calendar").execute({ view: "month", events: [] });
+    expect(context.tools.has("surface_set_calendar_view")).toBeTrue();
+    expect(context.tools.has("calendar_confirm_slot")).toBeFalse();
+
+    await context.tools.get("calendar_propose_slots").execute({
+      view: "month",
+      slots: [{ date: "2026-09-04", time: "19:00" }],
+    });
+    expect(context.tools.has("calendar_confirm_slot")).toBeTrue();
+
+    expect(
+      await context.tools.get("calendar_confirm_slot").execute({ slot: 99, title: "Annual event", created: true }),
+    ).toEqual({ error: "no such proposed slot" });
+    expect(store.state.view).toBe("calendar");
+
+    expect(
+      await context.tools.get("calendar_confirm_slot").execute({ slot: 1, title: "Annual event", created: false }),
+    ).toEqual({
+      selected: { date: "2026-09-04", time: "19:00", title: "Annual event" },
+      needsCalendarWrite: true,
+    });
+    expect(store.state.done?.message).toBe("Slot selected");
+    expect(context.tools.has("calendar_confirm_slot")).toBeFalse();
+  });
+
+  test("registers and removes reader tools as the page opens and closes an item", async () => {
+    const store = new Store();
+    const context = new FakeContext();
+    const adapter = new WebMCPAdapter(context);
+    wireTools(store, adapter);
+
+    await context.tools.get("surface_show_emails").execute({
+      emails: [{ id: "mail-1", from: "sender@example.com", subject: "Hello", body: "Private body" }],
+    });
+    expect(context.tools.has("surface_open_item")).toBeTrue();
+    expect(context.tools.has("surface_close_item")).toBeFalse();
+
+    await context.tools.get("surface_open_item").execute({ id: "mail-1" });
+    expect(context.tools.has("surface_close_item")).toBeTrue();
+
+    await context.tools.get("surface_close_item").execute({});
+    expect(context.tools.has("surface_close_item")).toBeFalse();
+    expect(store.state.view).toBe("stack");
+  });
+});

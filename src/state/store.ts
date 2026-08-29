@@ -1,3 +1,5 @@
+import { localDateISO } from "../utils";
+
 export type CardKind = "email" | "event" | "file" | "folder" | "doc" | "person" | "option" | "generic";
 
 export interface InviteDesign {
@@ -64,15 +66,13 @@ export interface State {
 
 type Listener = (s: State) => void;
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
-
 export class Store {
   state: State = {
     view: "idle",
     activeStackId: null,
     stacks: [],
     calendarView: "week",
-    anchor: todayISO(),
+    anchor: localDateISO(),
     events: [],
     hasCalendar: false,
     proposals: [],
@@ -123,8 +123,8 @@ export class Store {
     return proposals;
   }
 
-  confirmSlot(n: number, title: string): CalendarEvent | null {
-    const p = this.state.proposals.find((x) => x.n === n) ?? this.state.proposals[0];
+  confirmSlot(n: number, title: string, created = false): CalendarEvent | null {
+    const p = this.state.proposals.find((x) => x.n === n);
     if (!p) return null;
     const event: CalendarEvent = { date: p.date, time: p.time, title };
     this.state = {
@@ -133,7 +133,7 @@ export class Store {
       proposals: [],
       anchor: p.date,
       view: "done",
-      done: { message: "Event added", detail: `${title} · ${p.date} ${p.time}`, returnTo: "calendar" },
+      done: { message: created ? "Event added" : "Slot selected", detail: `${title} · ${p.date} ${p.time}`, returnTo: "calendar" },
     };
     this.emit();
     return event;
@@ -173,7 +173,8 @@ export class Store {
     else if (typeof ref === "string" && ref) {
       const q = ref.toLowerCase();
       const i = stack.items.findIndex((it) => it.id === ref || it.title.toLowerCase() === q);
-      if (i >= 0) idx = i;
+      if (i < 0) return null;
+      idx = i;
     }
     if (!stack.items[idx]) return null;
     const items = stack.items.map((it, i) => ({ ...it, selected: i === idx }));
@@ -183,16 +184,17 @@ export class Store {
     return items[idx];
   }
 
-  switchTo(target: string) {
+  switchTo(target: string): boolean {
     if (target === "calendar") {
-      if (!this.state.hasCalendar) return;
+      if (!this.state.hasCalendar) return false;
       this.state = { ...this.state, view: "calendar" };
     } else {
       const stack = this.state.stacks.find((s) => s.id === target);
-      if (!stack) return;
+      if (!stack) return false;
       this.state = { ...this.state, activeStackId: target, view: "stack" };
     }
     this.emit();
+    return true;
   }
 
   setCalendarView(view: CalendarView) {
@@ -200,20 +202,22 @@ export class Store {
     this.emit();
   }
 
-  openItem(id?: string, content?: string) {
+  openItem(id?: string, content?: string): CardItem | null {
     const stack = this.activeStack();
-    if (!stack || !stack.items.length) return;
+    if (!stack || !stack.items.length) return null;
     let focusIndex = stack.focusIndex;
     if (id) {
       const idx = stack.items.findIndex((it) => it.id === id);
-      if (idx >= 0) focusIndex = idx;
+      if (idx < 0) return null;
+      focusIndex = idx;
     }
-    const items = content
+    const items = content !== undefined
       ? stack.items.map((it, i) => (i === focusIndex ? { ...it, content } : it))
       : stack.items;
     const stacks = this.state.stacks.map((s) => (s.id === stack.id ? { ...s, items, focusIndex } : s));
     this.state = { ...this.state, stacks, view: "reader" };
     this.emit();
+    return items[focusIndex] ?? null;
   }
 
   closeItem() {
@@ -239,8 +243,11 @@ export class Store {
     } else if (s.view === "calendar") {
       const d = new Date(s.anchor + "T00:00:00");
       if (s.calendarView === "week") d.setDate(d.getDate() + dir * 7);
-      else d.setMonth(d.getMonth() + dir);
-      this.state = { ...s, anchor: d.toISOString().slice(0, 10) };
+      else {
+        d.setDate(1);
+        d.setMonth(d.getMonth() + dir);
+      }
+      this.state = { ...s, anchor: localDateISO(d) };
       this.emit();
     }
   }
@@ -250,6 +257,27 @@ export class Store {
   getViewState() {
     const s = this.state;
     const stack = this.activeStack();
+    const describeItem = (item: CardItem | undefined) =>
+      item
+        ? {
+            id: item.id,
+            kind: item.kind ?? stack?.kind ?? "generic",
+            title: item.title,
+            subtitle: item.subtitle,
+            badge: item.badge,
+            selected: Boolean(item.selected),
+            hasContent: Boolean(item.content),
+            hasImage: Boolean(item.imageUrl ?? item.design?.imageUrl),
+            design: item.design
+              ? {
+                  template: item.design.template,
+                  eventTitle: item.design.eventTitle,
+                  dateLine: item.design.dateLine,
+                  venue: item.design.venue,
+                }
+              : undefined,
+          }
+        : null;
     return {
       view: s.view,
       surfaces: [
@@ -266,9 +294,9 @@ export class Store {
               id: stack.id,
               title: stack.title,
               layout: stack.layout ?? "deck",
-              position: `${stack.focusIndex + 1} of ${stack.items.length}`,
-              focusedItem: stack.items[stack.focusIndex] ?? null,
-              selectedItem: stack.items.find((it) => it.selected) ?? null,
+              position: stack.items.length ? `${stack.focusIndex + 1} of ${stack.items.length}` : "0 of 0",
+              focusedItem: describeItem(stack.items[stack.focusIndex]),
+              selectedItem: describeItem(stack.items.find((it) => it.selected)),
             }
           : undefined,
       readerOpen: s.view === "reader",

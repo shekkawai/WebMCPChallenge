@@ -2,16 +2,19 @@ export interface ToolDef {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
-  execute: (args: any) => Promise<unknown> | unknown;
+  annotations?: { readOnlyHint?: boolean; untrustedContentHint?: boolean };
+  execute: (args: any, options?: { signal?: AbortSignal }) => Promise<unknown> | unknown;
 }
 
-interface ModelContext {
+export interface ModelContext {
   provideContext?: (opts: { tools: unknown[] }) => void;
-  registerTool?: (tool: unknown) => { unregister?: () => void } | void;
+  registerTool?: (tool: unknown, options?: { signal?: AbortSignal }) => Promise<void> | void;
 }
 
 function feed(line: string) {
-  document.dispatchEvent(new CustomEvent<string>("agent-feed", { detail: line }));
+  if (typeof document !== "undefined") {
+    document.dispatchEvent(new CustomEvent<string>("agent-feed", { detail: line }));
+  }
 }
 
 // Adapter over the WebMCP surface. The spec has already renamed its entry point
@@ -19,15 +22,29 @@ function feed(line: string) {
 // keep our own registry; the rest of the app never touches the raw API.
 export class WebMCPAdapter {
   private tools = new Map<string, ToolDef>();
-  private handles = new Map<string, { unregister?: () => void } | void>();
+  private registrations = new Map<string, { controller: AbortController; tool: ToolDef }>();
   private warnedUnavailable = false;
+  private readonly contextProvider: () => ModelContext | null;
+
+  constructor(context?: ModelContext | (() => ModelContext | null)) {
+    this.contextProvider =
+      typeof context === "function"
+        ? context
+        : context
+          ? () => context
+          : () =>
+              ((typeof document !== "undefined" ? (document as any).modelContext : null) ??
+                (typeof navigator !== "undefined" ? (navigator as any).modelContext : null) ??
+                null) as ModelContext | null;
+  }
 
   private ctx(): ModelContext | null {
-    return ((document as any).modelContext ?? (navigator as any).modelContext ?? null) as ModelContext | null;
+    return this.contextProvider();
   }
 
   get available(): boolean {
-    return this.ctx() !== null;
+    const ctx = this.ctx();
+    return Boolean(ctx && (typeof ctx.registerTool === "function" || typeof ctx.provideContext === "function"));
   }
 
   // Replace the full tool set. Called on view changes — this is what makes
@@ -37,15 +54,17 @@ export class WebMCPAdapter {
     this.sync();
   }
 
-  private wrap(tool: ToolDef) {
+  private wrap(tool: ToolDef, legacy = false) {
     return {
       name: tool.name,
       description: tool.description,
       inputSchema: tool.inputSchema,
-      execute: async (args: any) => {
-        feed(`→ ${tool.name}(${JSON.stringify(args ?? {}).slice(0, 120)})`);
-        const result = await tool.execute(args ?? {});
-        return { content: [{ type: "text", text: JSON.stringify(result ?? { ok: true }) }] };
+      annotations: tool.annotations,
+      execute: async (args: any, options?: { signal?: AbortSignal }) => {
+        const keys = args && typeof args === "object" ? Object.keys(args).join(", ") : "";
+        feed(`→ ${tool.name}${keys ? ` (${keys})` : ""}`);
+        const result = (await tool.execute(args ?? {}, options)) ?? { ok: true };
+        return legacy ? { content: [{ type: "text", text: JSON.stringify(result) }] } : result;
       },
     };
   }
@@ -59,23 +78,41 @@ export class WebMCPAdapter {
       }
       return;
     }
-    const wrapped = [...this.tools.values()].map((t) => this.wrap(t));
-    if (typeof ctx.provideContext === "function") {
-      ctx.provideContext({ tools: wrapped });
-      feed(`▲ toolchange: ${wrapped.length} tools provided`);
-      return;
-    }
     if (typeof ctx.registerTool === "function") {
-      for (const [name, handle] of this.handles) {
-        if (!this.tools.has(name)) {
-          if (handle && typeof handle.unregister === "function") handle.unregister();
-          this.handles.delete(name);
+      let changed = false;
+      for (const [name, registration] of this.registrations) {
+        const next = this.tools.get(name);
+        if (!next || next !== registration.tool) {
+          registration.controller.abort();
+          this.registrations.delete(name);
+          changed = true;
         }
       }
-      for (const t of wrapped) {
-        if (!this.handles.has(t.name)) this.handles.set(t.name, ctx.registerTool(t));
+      for (const tool of this.tools.values()) {
+        if (this.registrations.has(tool.name)) continue;
+        const controller = new AbortController();
+        this.registrations.set(tool.name, { controller, tool });
+        changed = true;
+        try {
+          Promise.resolve(ctx.registerTool(this.wrap(tool), { signal: controller.signal })).catch((error) => {
+            const current = this.registrations.get(tool.name);
+            if (current?.controller === controller) this.registrations.delete(tool.name);
+            if (!controller.signal.aborted) {
+              feed(`⚠ ${tool.name} registration failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
+          });
+        } catch (error) {
+          this.registrations.delete(tool.name);
+          feed(`⚠ ${tool.name} registration failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
-      feed(`▲ toolchange: ${wrapped.length} tools registered`);
+      if (changed) feed(`▲ toolchange: ${this.registrations.size} tools registered`);
+      return;
+    }
+    if (typeof ctx.provideContext === "function") {
+      const wrapped = [...this.tools.values()].map((t) => this.wrap(t, true));
+      ctx.provideContext({ tools: wrapped });
+      feed(`▲ toolchange: ${wrapped.length} legacy tools provided`);
     }
   }
 }

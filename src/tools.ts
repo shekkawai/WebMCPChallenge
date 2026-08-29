@@ -1,6 +1,9 @@
 import type { Store } from "./state/store";
 import type { ToolDef, WebMCPAdapter } from "./webmcp/adapter";
 import { speak } from "./speech";
+import { safeCssColor, safeImageUrl } from "./utils";
+
+const takeArray = (value: unknown, max: number) => (Array.isArray(value) ? value.slice(0, max) : null);
 
 export function wireTools(store: Store, mcp: WebMCPAdapter) {
   const base: ToolDef[] = [
@@ -15,6 +18,7 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
           anchor: { type: "string", description: "ISO date, e.g. 2026-09-14" },
           events: {
             type: "array",
+            maxItems: 500,
             items: {
               type: "object",
               properties: {
@@ -29,8 +33,10 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
         required: ["view", "events"],
       },
       execute: ({ view, events, anchor }: any) => {
-        store.showCalendar(events, view, anchor);
-        return { rendered: events.length, view };
+        const list = takeArray(events, 500);
+        if (!list) return { error: "events must be an array" };
+        store.showCalendar(list, view, anchor);
+        return { rendered: list.length, view };
       },
     },
     {
@@ -42,6 +48,7 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
         properties: {
           emails: {
             type: "array",
+            maxItems: 50,
             items: {
               type: "object",
               properties: {
@@ -59,11 +66,13 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
         required: ["emails"],
       },
       execute: ({ emails }: any) => {
+        const list = takeArray(emails, 50);
+        if (!list) return { error: "emails must be an array" };
         store.showStack(
           "mail",
           "Mail",
           "email",
-          emails.map((e: any, i: number) => ({
+          list.map((e: any, i: number) => ({
             id: e.id ?? String(i),
             kind: "email",
             title: e.subject,
@@ -73,7 +82,7 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
             badge: e.time,
           })),
         );
-        return { rendered: emails.length };
+        return { rendered: list.length };
       },
     },
     {
@@ -86,6 +95,7 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
           title: { type: "string", description: "surface label, e.g. the folder name. Default 'Drive'" },
           files: {
             type: "array",
+            maxItems: 100,
             items: {
               type: "object",
               properties: {
@@ -96,6 +106,7 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
                 modified: { type: "string", description: "e.g. 'Aug 27'" },
                 preview: { type: "string", description: "short description or first lines" },
                 content: { type: "string", description: "full text content, optional" },
+                imageUrl: { type: "string", description: "optional HTTPS or data:image thumbnail" },
               },
               required: ["name"],
             },
@@ -104,11 +115,13 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
         required: ["files"],
       },
       execute: ({ title, files }: any) => {
+        const list = takeArray(files, 100);
+        if (!list) return { error: "files must be an array" };
         store.showStack(
           "drive",
           title ?? "Drive",
           "file",
-          files.map((f: any, i: number) => ({
+          list.map((f: any, i: number) => ({
             id: f.id ?? String(i),
             kind: f.type === "folder" ? "folder" : f.type === "doc" || f.type === "sheet" || f.type === "slide" ? "doc" : "file",
             title: f.name,
@@ -116,9 +129,10 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
             preview: f.preview,
             content: f.content,
             badge: f.type ? String(f.type).toUpperCase() : undefined,
+            imageUrl: safeImageUrl(f.imageUrl),
           })),
         );
-        return { rendered: files.length };
+        return { rendered: list.length };
       },
     },
     {
@@ -132,6 +146,7 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
           title: { type: "string", description: "dock label, e.g. 'AI News'" },
           items: {
             type: "array",
+            maxItems: 100,
             items: {
               type: "object",
               properties: {
@@ -150,25 +165,38 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
         required: ["title", "items"],
       },
       execute: ({ id, title, items }: any) => {
+        const list = takeArray(items, 100);
+        if (!list) return { error: "items must be an array" };
         store.showStack(
           id ?? "items",
           title,
           "generic",
-          items.map((it: any, i: number) => ({ id: it.id ?? String(i), kind: "generic", ...it })),
+          list.map((it: any, i: number) => ({
+            id: it.id ?? String(i),
+            kind: "generic",
+            title: it.title,
+            subtitle: it.subtitle,
+            preview: it.preview,
+            badge: it.badge,
+            content: it.content,
+            imageUrl: safeImageUrl(it.imageUrl),
+          })),
         );
-        return { rendered: items.length };
+        return { rendered: list.length };
       },
     },
     {
       name: "surface_show_options",
       description:
-        "Present 2–4 visual design options as real rendered cards for the user to choose between — e.g. event invitation card designs. The surface draws each poster itself from your copy and styling (no image generation, text stays editable). The user can swipe between options, enlarge one, and pick by number or name.",
+        "Present 2–4 visual design options as rendered cards for the user to choose between. Supply structured copy and styling, plus optional generated or Drive artwork as an HTTPS or data:image URL. The page keeps the text separate from the artwork. The user can swipe, enlarge, and pick by number or name.",
       inputSchema: {
         type: "object",
         properties: {
           title: { type: "string", description: "dock label, e.g. 'Invitation designs'" },
           options: {
             type: "array",
+            minItems: 2,
+            maxItems: 4,
             items: {
               type: "object",
               properties: {
@@ -193,11 +221,13 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
         required: ["options"],
       },
       execute: ({ title, options }: any) => {
+        const list = takeArray(options, 4);
+        if (!list || list.length < 2) return { error: "options must contain 2–4 designs" };
         store.showStack(
           "options",
           title ?? "Designs",
           "option",
-          options.map((o: any, i: number) => ({
+          list.map((o: any, i: number) => ({
             id: String(i + 1),
             kind: "option",
             title: o.name,
@@ -208,13 +238,13 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
               dateLine: o.dateLine,
               venue: o.venue,
               tagline: o.tagline,
-              accent: o.accent,
+              accent: safeCssColor(o.accent),
               logoText: o.logoText,
-              imageUrl: o.imageUrl,
+              imageUrl: safeImageUrl(o.imageUrl),
             },
           })),
         );
-        return { rendered: options.length, hint: "user picks by swiping + saying a number, or you call option_select" };
+        return { rendered: list.length, hint: "user picks by swiping + saying a number, or you call option_select" };
       },
     },
     {
@@ -227,6 +257,7 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
           title: { type: "string", description: "dock label, e.g. 'Recipients'. Default 'People'" },
           people: {
             type: "array",
+            maxItems: 100,
             items: {
               type: "object",
               properties: {
@@ -241,11 +272,13 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
         required: ["people"],
       },
       execute: ({ title, people }: any) => {
+        const list = takeArray(people, 100);
+        if (!list) return { error: "people must be an array" };
         store.showStack(
           "people",
           title ?? "People",
           "person",
-          people.map((p: any, i: number) => ({
+          list.map((p: any, i: number) => ({
             id: String(i),
             kind: "person",
             title: p.name,
@@ -254,7 +287,7 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
           })),
           "grid",
         );
-        return { rendered: people.length };
+        return { rendered: list.length };
       },
     },
     {
@@ -270,11 +303,13 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
         required: ["url"],
       },
       execute: ({ url, title }: any) => {
-        if (!/^(https:|data:image\/)/.test(url)) return { error: "url must be https: or data:image/" };
+        const imageUrl = safeImageUrl(url);
+        if (!imageUrl) return { error: "url must be a valid HTTPS or supported data:image URL no larger than 12 MiB" };
         const existing = store.state.stacks.find((s) => s.id === "images");
+        const id = globalThis.crypto?.randomUUID?.() ?? `image-${Date.now()}`;
         const items = [
-          ...(existing?.items ?? []),
-          { id: String((existing?.items.length ?? 0) + 1), kind: "generic" as const, title: title ?? "Image", imageUrl: url },
+          ...(existing?.items.slice(-9) ?? []),
+          { id, kind: "generic" as const, title: title ?? "Image", imageUrl },
         ];
         store.showStack("images", "Images", "generic", items);
         store.openItem(items[items.length - 1].id);
@@ -308,8 +343,7 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
         required: ["target"],
       },
       execute: ({ target }: any) => {
-        store.switchTo(target);
-        return store.getViewState();
+        return store.switchTo(target) ? store.getViewState() : { error: `surface '${String(target)}' does not exist` };
       },
     },
     {
@@ -317,6 +351,7 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
       description:
         "Read what the user is currently looking at: active view, which week/month the calendar sits on, which card is focused after the user's palm swipes, and what surfaces exist. Always call this to resolve references like 'this one', 'this week' or 'that email'.",
       inputSchema: { type: "object", properties: {} },
+      annotations: { readOnlyHint: true, untrustedContentHint: true },
       execute: () => store.getViewState(),
     },
     {
@@ -324,11 +359,12 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
       description: "Speak a short line out loud through the surface's own speaker.",
       inputSchema: {
         type: "object",
-        properties: { text: { type: "string" } },
+        properties: { text: { type: "string", maxLength: 500 } },
         required: ["text"],
       },
       execute: ({ text }: any) => {
-        speak(text);
+        const line = String(text ?? "").slice(0, 500);
+        speak(line);
         return { spoke: true };
       },
     },
@@ -361,6 +397,8 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
           view: { type: "string", enum: ["week", "month"], description: "optional view to show the proposals in" },
           slots: {
             type: "array",
+            minItems: 1,
+            maxItems: 6,
             items: {
               type: "object",
               properties: {
@@ -376,7 +414,9 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
         required: ["slots"],
       },
       execute: ({ slots, view }: any) => {
-        const proposals = store.proposeSlots(slots, view);
+        const list = takeArray(slots, 6);
+        if (!list || !list.length) return { error: "slots must contain 1–6 proposals" };
+        const proposals = store.proposeSlots(list, view);
         return { proposals: proposals.map((p) => ({ slot: p.n, date: p.date, time: p.time })) };
       },
     },
@@ -385,18 +425,20 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
   const confirmSlotTool: ToolDef = {
     name: "calendar_confirm_slot",
     description:
-      "Confirm one of the currently proposed slots by its number and add the event to the on-screen calendar. Also create the event in the user's real calendar via your connector when you can. Shows an 'Event added' confirmation.",
+      "Confirm one of the currently proposed slots by its number. First create the event through the user's calendar connector after receiving confirmation, then call this tool with created=true. If the connector is unavailable or fails, call with created=false so the surface says 'Slot selected' instead of falsely claiming it was added.",
     inputSchema: {
       type: "object",
       properties: {
-        slot: { type: "number", description: "the proposal number, 1-based" },
+        slot: { type: "integer", minimum: 1, maximum: 6, description: "the proposal number, 1-based" },
         title: { type: "string", description: "event title" },
+        created: { type: "boolean", description: "true only when the real calendar connector confirmed creation" },
       },
-      required: ["slot", "title"],
+      required: ["slot", "title", "created"],
     },
-    execute: ({ slot, title }: any) => {
-      const event = store.confirmSlot(slot, title);
-      return event ? { added: event } : { error: "no such proposed slot" };
+    execute: ({ slot, title, created }: any) => {
+      const event = store.confirmSlot(slot, title, created === true);
+      if (!event) return { error: "no such proposed slot" };
+      return created === true ? { added: event } : { selected: event, needsCalendarWrite: true };
     },
   };
 
@@ -428,8 +470,8 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
       },
     },
     execute: ({ id, content }: any) => {
-      store.openItem(id, content);
-      return store.getViewState();
+      const item = store.openItem(id, content);
+      return item ? store.getViewState() : { error: id ? `item '${id}' does not exist` : "nothing to open" };
     },
   };
 
