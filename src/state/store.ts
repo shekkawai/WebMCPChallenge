@@ -8,6 +8,7 @@ export interface InviteDesign {
   tagline?: string;
   accent?: string;
   logoText?: string;
+  imageUrl?: string;
 }
 
 export interface CardItem {
@@ -20,6 +21,7 @@ export interface CardItem {
   badge?: string;
   design?: InviteDesign;
   selected?: boolean;
+  imageUrl?: string;
 }
 
 export interface Stack {

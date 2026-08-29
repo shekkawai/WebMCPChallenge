@@ -141,6 +141,7 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
                 preview: { type: "string" },
                 badge: { type: "string" },
                 content: { type: "string", description: "full text for the reader, optional" },
+                imageUrl: { type: "string", description: "optional image (HTTPS URL or data: URL) shown on the card and in the reader" },
               },
               required: ["title"],
             },
@@ -179,6 +180,11 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
                 tagline: { type: "string" },
                 accent: { type: "string", description: "CSS color for the accent, e.g. '#8b5cf6'" },
                 logoText: { type: "string", description: "short logo mark, e.g. 'OMP'" },
+                imageUrl: {
+                  type: "string",
+                  description:
+                    "optional poster background artwork: an HTTPS image URL (e.g. a Drive thumbnail) or a data: URL of an image you generated. Text renders on top and stays editable.",
+                },
               },
               required: ["name", "template", "eventTitle", "dateLine"],
             },
@@ -204,6 +210,7 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
               tagline: o.tagline,
               accent: o.accent,
               logoText: o.logoText,
+              imageUrl: o.imageUrl,
             },
           })),
         );
@@ -248,6 +255,30 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
           "grid",
         );
         return { rendered: people.length };
+      },
+    },
+    {
+      name: "surface_open_image",
+      description:
+        "Display an image full-screen on the surface. Accepts an HTTPS image URL (e.g. a Drive thumbnail or photo link) or a data: URL of an image you generated or were given. The image joins the 'Images' stack, so several opened images become swipeable.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: "HTTPS image URL or data:image/... URL" },
+          title: { type: "string", description: "short caption, e.g. the filename" },
+        },
+        required: ["url"],
+      },
+      execute: ({ url, title }: any) => {
+        if (!/^(https:|data:image\/)/.test(url)) return { error: "url must be https: or data:image/" };
+        const existing = store.state.stacks.find((s) => s.id === "images");
+        const items = [
+          ...(existing?.items ?? []),
+          { id: String((existing?.items.length ?? 0) + 1), kind: "generic" as const, title: title ?? "Image", imageUrl: url },
+        ];
+        store.showStack("images", "Images", "generic", items);
+        store.openItem(items[items.length - 1].id);
+        return { shown: true, images: items.length };
       },
     },
     {

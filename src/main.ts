@@ -176,6 +176,32 @@ if (demo !== null) {
       "month",
     );
   else if (demo === "options") seedOptions();
+  else if (demo === "photo") {
+    const art =
+      "data:image/svg+xml;utf8," +
+      encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000"><defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b1a5e"/><stop offset=".55" stop-color="#a34a7d"/><stop offset="1" stop-color="#f2a65a"/></linearGradient></defs><rect width="800" height="1000" fill="url(#s)"/><circle cx="400" cy="560" r="150" fill="#ffd9a0" opacity=".9"/><rect y="640" width="800" height="360" fill="#1a1030" opacity=".85"/><path d="M0 660 Q200 600 400 650 T800 640 V1000 H0 Z" fill="#241543"/></svg>`,
+      );
+    store.showStack("options", "Invitation designs", "option", [
+      {
+        id: "1",
+        kind: "option",
+        title: "Sunset artwork",
+        badge: "Option 1",
+        design: {
+          template: "aurora",
+          eventTitle: "OMP Annual Gathering",
+          dateLine: `Fri ${fridays[2].slice(8)}/${fridays[2].slice(5, 7)} · 7:00 PM`,
+          venue: "The Hive · Wan Chai",
+          tagline: "Artwork by your agent — text still editable",
+          accent: "#f2a65a",
+          logoText: "OMP",
+          imageUrl: art,
+        },
+      },
+    ]);
+    store.openItem("1");
+  }
   else if (demo === "chosen") {
     seedOptions();
     store.selectOption(1);

@@ -116,7 +116,8 @@ function monthHTML(s: State): string {
 
 function posterHTML(d: InviteDesign, large: boolean): string {
   const accent = d.accent ?? "#8b5cf6";
-  return `<div class="poster ${d.template}${large ? " lg" : ""}" style="--accent:${esc(accent)}">
+  return `<div class="poster ${d.template}${large ? " lg" : ""}${d.imageUrl ? " has-img" : ""}" style="--accent:${esc(accent)}">
+      ${d.imageUrl ? `<img class="pimg" src="${esc(d.imageUrl)}" alt="" /><div class="pscrim"></div>` : ""}
       ${d.logoText ? `<span class="plogo">${esc(d.logoText)}</span>` : ""}
       <div class="pmid">
         <div class="ptitle">${esc(d.eventTitle)}</div>
@@ -139,6 +140,7 @@ function cardInner(item: CardItem, fallbackKind: string): string {
   const kind = item.kind ?? fallbackKind;
   return `
     <div class="k">${icon(kind)}<span>${esc(kind)}</span>${item.badge ? `<span class="badge">${esc(item.badge)}</span>` : ""}</div>
+    ${item.imageUrl ? `<img class="thumb" src="${esc(item.imageUrl)}" alt="" />` : ""}
     <h2>${esc(item.title)}</h2>
     ${item.subtitle ? `<div class="sub">${esc(item.subtitle)}</div>` : ""}
     ${item.preview ? `<p class="prevw">${esc(item.preview)}</p>` : ""}`;
@@ -207,6 +209,7 @@ function readerHTML(stack: Stack): string {
       <div class="k">${icon(kind)}<span>${esc(kind)}</span>${item.badge ? `<span class="badge">${esc(item.badge)}</span>` : ""}</div>
       <h1>${esc(item.title)}</h1>
       ${item.subtitle ? `<div class="sub">${esc(item.subtitle)}</div>` : ""}
+      ${item.imageUrl ? `<img class="rimg" src="${esc(item.imageUrl)}" alt="" />` : ""}
       <div class="body">${esc(item.content ?? item.preview ?? "")}</div>
       <div class="rhint">say "close" · swipe for next</div>
     </section>`;

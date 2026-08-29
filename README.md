@@ -44,6 +44,7 @@ The agent's connectors know your data; the page knows your body and your focus. 
 | `option_select` | agent → page | Mark the chosen option — *only while options are shown* |
 | `surface_show_people` | agent → page | Render recipients/contacts as a name-chip grid |
 | `surface_confirm_done` | agent → page | Full-screen check confirmation after an action completes |
+| `surface_open_image` | agent → page | Display an image from an HTTPS URL or `data:` URL (the Webroom ingestion pattern) |
 
 ## Run
 
@@ -51,7 +52,7 @@ The agent's connectors know your data; the page knows your body and your focus. 
 bun install
 bun run dev
 # open http://localhost:5173/?demo=mail
-# (also: drive | calendar | month | reader | slots | options | chosen | people | done)
+# (also: drive | calendar | month | reader | slots | options | chosen | people | done | photo)
 # ← → keys mirror the palm swipe; window.__surface exposes store + adapter
 ```
 

@@ -290,3 +290,24 @@ body {
 .done p { margin-top: 10px; font-size: 16px; color: rgba(255, 255, 255, 0.6); }
 .done .rhint { margin-top: 26px; }
 @keyframes ringin { from { opacity: 0; transform: scale(0.7); } }
+
+/* ---- images on posters, cards, reader ---- */
+.poster { isolation: isolate; }
+.pimg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+.pscrim {
+  position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(to bottom, rgba(8, 10, 18, 0.15), rgba(8, 10, 18, 0.28) 55%, rgba(8, 10, 18, 0.72));
+}
+.poster.has-img { color: #fff; text-shadow: 0 2px 16px rgba(0, 0, 0, 0.55); }
+.poster.has-img .plogo { background: rgba(255, 255, 255, 0.22); color: #fff; }
+.poster.mono.has-img .plogo { background: rgba(255, 255, 255, 0.22); color: #fff; }
+.poster.mono.has-img .pmid { border-top-color: rgba(255, 255, 255, 0.85); }
+.poster.mono.has-img .pdate { color: #fff; }
+.card .thumb {
+  width: 100%; max-height: 180px; object-fit: cover;
+  border-radius: 14px; margin-bottom: 16px; border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.rimg {
+  width: 100%; max-height: 56vh; object-fit: contain;
+  border-radius: 16px; margin-top: 20px; background: rgba(0, 0, 0, 0.25);
+}
