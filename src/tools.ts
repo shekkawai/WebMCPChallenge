@@ -436,7 +436,11 @@ export function wireTools(
         type: "object",
         properties: {
           url: { type: "string", description: "HTTPS image URL or data:image/... URL" },
-          title: { type: "string", description: "short caption, e.g. the filename" },
+          title: {
+            type: "string",
+            description:
+              "short caption, e.g. the filename. Give each image a DISTINCT caption — surface_get_view_state reports it back as the focused item's title, which is how you know which image the user swiped to.",
+          },
         },
         required: ["url"],
       },
@@ -445,13 +449,14 @@ export function wireTools(
         if (!imageUrl) return { error: "url must be a valid HTTPS or supported data:image URL no larger than 12 MiB" };
         const existing = store.state.stacks.find((s) => s.id === "images");
         const id = globalThis.crypto?.randomUUID?.() ?? `image-${Date.now()}`;
+        const shownTitle = title ?? "Image";
         const items = [
           ...(existing?.items.slice(-9) ?? []),
-          { id, kind: "generic" as const, title: title ?? "Image", imageUrl },
+          { id, kind: "generic" as const, title: shownTitle, imageUrl },
         ];
         store.showStack("images", "Images", "generic", items);
         store.openItem(items[items.length - 1].id);
-        return { shown: true, images: items.length };
+        return { shown: true, id, title: shownTitle, position: items.length, images: items.length };
       },
     },
     {

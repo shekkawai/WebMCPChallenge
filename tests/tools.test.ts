@@ -66,4 +66,27 @@ describe("surface tool flow", () => {
     expect(context.tools.has("surface_close_item")).toBeFalse();
     expect(store.state.view).toBe("stack");
   });
+
+  test("opened images are identifiable in view state after the user swipes", async () => {
+    const store = new Store();
+    const context = new FakeContext();
+    wireTools(store, new WebMCPAdapter(context));
+
+    const open = context.tools.get("surface_open_image");
+    const first = await open.execute({ url: "https://example.com/a.png", title: "Sunset v1" });
+    const second = await open.execute({ url: "https://example.com/b.png", title: "Sunset v2" });
+    const third = await open.execute({ url: "https://example.com/c.png", title: "Sunset v3" });
+    expect(first.id).toBeTruthy();
+    expect(second.position).toBe(2);
+    expect(third.images).toBe(3);
+
+    store.closeItem();
+    store.swipe(-1);
+    const state = context.tools.get("surface_get_view_state").execute({});
+    expect(state.stack.position).toBe("2 of 3");
+    expect(state.stack.focusedItem.id).toBe(second.id);
+    expect(state.stack.focusedItem.title).toBe("Sunset v2");
+    expect(state.stack.focusedItem.hasImage).toBeTrue();
+    expect(JSON.stringify(state)).not.toContain("example.com");
+  });
 });
