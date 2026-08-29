@@ -119,7 +119,9 @@ body {
   background: rgba(255, 255, 255, 0.1); font-size: 11px; font-weight: 700;
 }
 .controller-steps li.learned .step-number { color: #10251b; background: #9ef3c9; }
+.controller-steps li.optional:not(.current):not(.learned) { opacity: 0.62; }
 .controller-steps b { font-size: 13px; }
+.controller-steps b small { margin-left: 4px; font-size: 9.5px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255, 255, 255, 0.38); }
 .controller-binding { font-size: 11px; color: rgba(255, 255, 255, 0.42); }
 .controller-mode {
   display: flex; justify-content: space-between; align-items: center; margin-top: 13px; padding: 11px 2px;
@@ -269,6 +271,23 @@ body {
 .dock-item.on { background: rgba(255, 255, 255, 0.16); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25); }
 .dock-item .ic { width: 24px; height: 24px; border-radius: 8px; }
 .dock-item .ic svg { width: 13.5px; height: 13.5px; }
+
+/* D-pad focus: Down drops the highlight onto the dock, ◀ ▶ move it, Select opens. */
+#dock.picking {
+  border-color: rgba(255, 207, 138, 0.35);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 207, 138, 0.12);
+}
+.dock-item.pick {
+  color: #fff; background: rgba(255, 207, 138, 0.16);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 207, 138, 0.85), 0 4px 18px rgba(255, 176, 64, 0.22);
+  transform: translateY(-2px);
+}
+.dock-item { transition: background 0.25s ease, color 0.25s ease, transform 0.22s cubic-bezier(0.3, 1.4, 0.4, 1), box-shadow 0.22s ease; }
+.dock-hint {
+  position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
+  white-space: nowrap; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgba(255, 207, 138, 0.78);
+}
 
 /* ---- hint + agent feed ---- */
 #hint {
@@ -565,6 +584,7 @@ body.glasses-on #dock { bottom: 14px; padding: 6px; border-radius: 20px; }
 body.glasses-on .dock-item { padding: 7px 12px; font-size: 11.5px; gap: 7px; border-radius: 14px; }
 body.glasses-on .dock-item .ic { width: 19px; height: 19px; border-radius: 6px; }
 body.glasses-on .dock-item .ic svg { width: 11px; height: 11px; }
+body.glasses-on .dock-hint { top: -19px; font-size: 8.5px; letter-spacing: 0.1em; }
 body.glasses-on #hint { display: none; }
 body.glasses-on #feed { left: 18px; bottom: 16px; width: 220px; font-size: 9.5px; }
 body.glasses-on #swipe-pulse { font-size: 44px; }

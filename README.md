@@ -116,21 +116,30 @@ incomplete gesture springs back. Reduced-motion preferences disable this
 direct manipulation and all decorative transitions. It follows the familiar
 touch-carousel convention: sweep left for next, sweep right for previous.
 
-### Ring / clicker / wheel input
+### Ring / clicker / wheel input — the D-pad model
+
+Navigation works like a game controller. **Left/Right** move focus,
+**Down** drops a visible amber highlight onto the dock (the tab bar),
+Left/Right then move the highlight between surfaces, **Select** opens the
+highlighted tab, and **Up** returns focus to the cards. Inside an open
+document, Down/Up scroll it instead — reading beats navigating.
 
 Click **Controller**, then press the ring's **Previous**, **Next**, and
-**Select** buttons once. The page learns the exact keyboard key, mouse button,
-or wheel direction emitted by that device, saves it locally, and turns on Ring
-Mode. Select opens the focused email/file or chooses the focused invitation
-design; it never creates a calendar event or sends anything—those actions still
+**Select** buttons once; a 4-direction ring can optionally also teach **Down**
+and **Up** (or press Skip — three buttons is enough). The page learns the
+exact keyboard key, mouse button, or wheel direction emitted by that device,
+saves it locally, and turns on Ring Mode. Rings that emit real arrow keys get
+the full D-pad with no setup at all. Select opens the focused email/file,
+chooses the focused invitation design, or switches to the highlighted dock
+tab; it never creates a calendar event or sends anything—those actions still
 require voice confirmation through the agent.
 
-Outside Ring Mode, vertical scrolling, PageUp/PageDown, ArrowUp/ArrowDown,
-mouse clicks, and trackpad gestures keep their normal browser behavior. The
-plain ArrowLeft/ArrowRight no-camera fallback remains available away from form
-controls. Some media/browser keys can be consumed by the operating system and
-will not reach any webpage; Controller Setup makes that limitation visible
-instead of claiming universal compatibility.
+Outside Ring Mode the same D-pad works on the plain keyboard (arrows + Enter,
+away from form controls), while vertical scrolling, mouse clicks, and trackpad
+gestures keep their normal browser behavior. Some media/browser keys can be
+consumed by the operating system and will not reach any webpage; Controller
+Setup makes that limitation visible instead of claiming universal
+compatibility.
 
 Deploy the production build to Cloudflare Workers with `bun run deploy`.
 

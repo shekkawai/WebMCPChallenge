@@ -68,6 +68,18 @@ export interface State {
   hasCalendar: boolean;
   proposals: SlotProposal[];
   done: { message: string; detail?: string; returnTo: ViewName } | null;
+  // D-pad focus: null = focus lives on the stage; a number = the dock tab
+  // currently highlighted, indexing into dockTargets(state).
+  dockFocus: number | null;
+}
+
+// The dock's tab list, in render order. The renderer and the D-pad focus model
+// must agree on this ordering, so it lives in one place.
+export function dockTargets(s: State): { id: string; title: string; kind: CardKind }[] {
+  return [
+    ...(s.hasCalendar ? [{ id: "calendar", title: "Calendar", kind: "event" as CardKind }] : []),
+    ...s.stacks.map((st) => ({ id: st.id, title: st.title, kind: st.kind })),
+  ];
 }
 
 type Listener = (s: State) => void;
@@ -83,6 +95,7 @@ export class Store {
     hasCalendar: false,
     proposals: [],
     done: null,
+    dockFocus: null,
   };
 
   private listeners: Listener[] = [];
@@ -108,6 +121,7 @@ export class Store {
       events,
       anchor: anchor ?? this.state.anchor,
       hasCalendar: true,
+      dockFocus: null,
     };
     this.emit();
   }
@@ -124,6 +138,7 @@ export class Store {
       hasCalendar: true,
       calendarView: view ?? this.state.calendarView,
       anchor: proposals[0]?.date ?? this.state.anchor,
+      dockFocus: null,
     };
     this.emit();
     return proposals;
@@ -140,6 +155,7 @@ export class Store {
       anchor: p.date,
       view: "done",
       done: { message: created ? "Event added" : "Slot selected", detail: `${title} · ${p.date} ${p.time}`, returnTo: "calendar" },
+      dockFocus: null,
     };
     this.emit();
     return event;
@@ -147,13 +163,13 @@ export class Store {
 
   showDone(message: string, detail?: string) {
     const returnTo = this.state.view === "done" ? (this.state.done?.returnTo ?? "idle") : this.state.view;
-    this.state = { ...this.state, view: "done", done: { message, detail, returnTo } };
+    this.state = { ...this.state, view: "done", done: { message, detail, returnTo }, dockFocus: null };
     this.emit();
   }
 
   dismissDone() {
     if (this.state.view !== "done") return;
-    this.state = { ...this.state, view: this.state.done?.returnTo ?? "idle", done: null };
+    this.state = { ...this.state, view: this.state.done?.returnTo ?? "idle", done: null, dockFocus: null };
     this.emit();
   }
 
@@ -177,7 +193,7 @@ export class Store {
     const stacks = existing
       ? this.state.stacks.map((s) => (s.id === id ? stack : s))
       : [...this.state.stacks, stack];
-    this.state = { ...this.state, stacks, activeStackId: id, view: "stack" };
+    this.state = { ...this.state, stacks, activeStackId: id, view: "stack", dockFocus: null };
     this.emit();
   }
 
@@ -196,7 +212,7 @@ export class Store {
     if (!stack.items[idx]) return null;
     const items = stack.items.map((it, i) => ({ ...it, selected: i === idx }));
     const stacks = this.state.stacks.map((s) => (s.id === stack.id ? { ...s, items, focusIndex: idx } : s));
-    this.state = { ...this.state, stacks, view: "stack" };
+    this.state = { ...this.state, stacks, view: "stack", dockFocus: null };
     this.emit();
     return items[idx];
   }
@@ -220,7 +236,7 @@ export class Store {
     const stacks = this.state.stacks.map((entry) =>
       entry.id === stack.id ? { ...entry, items, focusIndex: idx } : entry,
     );
-    this.state = { ...this.state, stacks, view: "stack" };
+    this.state = { ...this.state, stacks, view: "stack", dockFocus: null };
     this.emit();
     return items[idx];
   }
@@ -228,11 +244,11 @@ export class Store {
   switchTo(target: string): boolean {
     if (target === "calendar") {
       if (!this.state.hasCalendar) return false;
-      this.state = { ...this.state, view: "calendar" };
+      this.state = { ...this.state, view: "calendar", dockFocus: null };
     } else {
       const stack = this.state.stacks.find((s) => s.id === target);
       if (!stack) return false;
-      this.state = { ...this.state, activeStackId: target, view: "stack" };
+      this.state = { ...this.state, activeStackId: target, view: "stack", dockFocus: null };
     }
     this.emit();
     return true;
@@ -256,22 +272,65 @@ export class Store {
       ? stack.items.map((it, i) => (i === focusIndex ? { ...it, content } : it))
       : stack.items;
     const stacks = this.state.stacks.map((s) => (s.id === stack.id ? { ...s, items, focusIndex } : s));
-    this.state = { ...this.state, stacks, view: "reader" };
+    this.state = { ...this.state, stacks, view: "reader", dockFocus: null };
     this.emit();
     return items[focusIndex] ?? null;
   }
 
   closeItem() {
     if (this.state.view !== "reader") return;
-    this.state = { ...this.state, view: "stack" };
+    this.state = { ...this.state, view: "stack", dockFocus: null };
     this.emit();
   }
 
+  // D-pad focus model (video-game controller): Down drops focus onto the dock,
+  // Left/Right move the highlight, Select opens the highlighted tab, Up goes
+  // back to the stage. Any horizontal input (palm, keys, ring, wheel) routes
+  // through the highlight while the dock holds focus — same one-verb rule as
+  // swipe itself.
+  focusDock(): boolean {
+    const targets = dockTargets(this.state);
+    if (!targets.length || this.state.dockFocus !== null) return false;
+    const activeId = this.state.view === "calendar" ? "calendar" : this.state.activeStackId;
+    const idx = targets.findIndex((t) => t.id === activeId);
+    this.state = { ...this.state, dockFocus: idx < 0 ? 0 : idx };
+    this.emit();
+    return true;
+  }
+
+  blurDock(): boolean {
+    if (this.state.dockFocus === null) return false;
+    this.state = { ...this.state, dockFocus: null };
+    this.emit();
+    return true;
+  }
+
+  moveDockFocus(dir: 1 | -1): boolean {
+    if (this.state.dockFocus === null) return false;
+    const targets = dockTargets(this.state);
+    const next = Math.min(Math.max(this.state.dockFocus + dir, 0), targets.length - 1);
+    if (next === this.state.dockFocus) return false;
+    this.state = { ...this.state, dockFocus: next };
+    this.emit();
+    return true;
+  }
+
+  activateDockFocus(): boolean {
+    const targets = dockTargets(this.state);
+    const target = this.state.dockFocus === null ? undefined : targets[this.state.dockFocus];
+    if (!target) return false;
+    this.state = { ...this.state, dockFocus: null };
+    if (this.switchTo(target.id)) return true;
+    this.emit();
+    return false;
+  }
+
   // One verb for the palm swipe, whatever is on screen:
-  // stack/reader -> next/previous card, calendar -> next/previous week or month,
-  // done -> dismiss the confirmation.
+  // dock focused -> move the highlight, stack/reader -> next/previous card,
+  // calendar -> next/previous week or month, done -> dismiss the confirmation.
   swipe(dir: 1 | -1) {
     const s = this.state;
+    if (s.dockFocus !== null) return this.moveDockFocus(dir);
     if (s.view === "done") {
       this.dismissDone();
       return true;
@@ -333,6 +392,9 @@ export class Store {
         ...(s.hasCalendar ? [{ id: "calendar", title: "Calendar" }] : []),
         ...s.stacks.map((st) => ({ id: st.id, title: st.title, items: st.items.length })),
       ],
+      // Set while the user is D-pad-highlighting a dock tab — "open this one"
+      // then refers to a surface, not a card.
+      dockHighlight: s.dockFocus !== null ? dockTargets(s)[s.dockFocus]?.id : undefined,
       calendar: s.view === "calendar" ? { calendarView: s.calendarView, anchor: s.anchor } : undefined,
       proposals: s.proposals.length
         ? s.proposals.map((p) => ({ slot: p.n, date: p.date, time: p.time, label: p.label }))

@@ -1,4 +1,5 @@
 import type { CardItem, InviteDesign, Stack, State, Store } from "../state/store";
+import { dockTargets } from "../state/store";
 import { localDateISO, safeCssColor, safeImageUrl } from "../utils";
 import { SurfaceMotion, cardRole } from "../motion";
 
@@ -290,23 +291,21 @@ function readerHTML(stack: Stack): string {
 }
 
 function dockHTML(s: State): string {
-  const entries: { id: string; title: string; kind: string; on: boolean }[] = [];
-  if (s.hasCalendar)
-    entries.push({ id: "calendar", title: "Calendar", kind: "event", on: s.view === "calendar" });
-  for (const st of s.stacks)
-    entries.push({
-      id: st.id,
-      title: st.title,
-      kind: st.kind,
-      on: (s.view === "stack" || s.view === "reader") && s.activeStackId === st.id,
-    });
+  const entries = dockTargets(s);
   if (!entries.length) return "";
-  return entries
-    .map(
-      (e) =>
-        `<button class="dock-item${e.on ? " on" : ""}" data-target="${esc(e.id)}">${icon(e.kind)}<span>${esc(e.title)}</span></button>`,
-    )
-    .join("");
+  const activeId =
+    s.view === "calendar" ? "calendar" : s.view === "stack" || s.view === "reader" ? s.activeStackId : null;
+  const hint =
+    s.dockFocus !== null ? '<span class="dock-hint">◀ ▶ choose · select opens · ▲ back</span>' : "";
+  return (
+    hint +
+    entries
+      .map(
+        (e, i) =>
+          `<button class="dock-item${e.id === activeId ? " on" : ""}${s.dockFocus === i ? " pick" : ""}" data-target="${esc(e.id)}">${icon(e.kind)}<span>${esc(e.title)}</span></button>`,
+      )
+      .join("")
+  );
 }
 
 function stageHTML(s: State, stack: Stack | null): string {
@@ -368,10 +367,13 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
         <li data-controller-action="previous"><span class="step-number">1</span><b>Previous</b><span class="controller-binding">Not learned</span></li>
         <li data-controller-action="next"><span class="step-number">2</span><b>Next</b><span class="controller-binding">Not learned</span></li>
         <li data-controller-action="select"><span class="step-number">3</span><b>Select</b><span class="controller-binding">Not learned</span></li>
+        <li data-controller-action="down" class="optional"><span class="step-number">4</span><b>Down · dock <small>optional</small></b><span class="controller-binding">Not learned</span></li>
+        <li data-controller-action="up" class="optional"><span class="step-number">5</span><b>Up · back <small>optional</small></b><span class="controller-binding">Not learned</span></li>
       </ol>
       <label class="controller-mode"><span><b>Ring Mode</b><small>Use only the controls learned above</small></span><input id="controller-mode" type="checkbox" /></label>
       <div class="controller-actions">
         <button id="controller-start" type="button">Start setup</button>
+        <button id="controller-skip" type="button" hidden>Skip — 3 is enough</button>
         <button id="controller-reset" type="button" hidden>Reset</button>
       </div>
       <p class="controller-note">Keyboard scrolling stays normal. Wheel gestures navigate only while Ring Mode is on. Calendar creation and sending still require voice confirmation.</p>
@@ -409,6 +411,7 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
     while (feed.children.length > 6) feed.lastChild?.remove();
   });
 
+  let prevState: State | undefined;
   let previous:
     | {
         view: State["view"];
@@ -425,6 +428,14 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
     const dockContent = dockHTML(s);
     dock.innerHTML = dockContent;
     dock.style.display = dockContent ? "flex" : "none";
+    dock.classList.toggle("picking", s.dockFocus !== null);
+    // A dock-highlight move changes nothing on the stage; rebuilding it would
+    // restart transitions for no visual change, so only the dock re-renders.
+    const dockOnly =
+      prevState !== undefined &&
+      (Object.keys(s) as (keyof State)[]).every((k) => k === "dockFocus" || Object.is(s[k], prevState![k]));
+    prevState = s;
+    if (dockOnly) return;
     const stack = store.activeStack();
     const html = stageHTML(s, stack);
     const sameStack =

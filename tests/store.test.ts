@@ -81,3 +81,64 @@ describe("Store", () => {
     expect(emissions).toBe(1);
   });
 });
+
+describe("Dock D-pad focus", () => {
+  const seeded = () => {
+    const store = new Store();
+    store.showCalendar([], "week");
+    store.showStack("mail", "Mail", "email", [
+      { id: "m1", title: "First" },
+      { id: "m2", title: "Second" },
+    ]);
+    store.showStack("drive", "Files", "file", [{ id: "d1", title: "Doc" }]);
+    return store;
+  };
+
+  test("down focuses the active tab, swipes move the highlight, select switches", () => {
+    const store = seeded();
+    expect(store.focusDock()).toBeTrue();
+    expect(store.state.dockFocus).toBe(2);
+    expect(store.swipe(-1)).toBeTrue();
+    expect(store.state.dockFocus).toBe(1);
+    expect(store.state.activeStackId).toBe("drive");
+    expect(store.activateDockFocus()).toBeTrue();
+    expect(store.state.view).toBe("stack");
+    expect(store.state.activeStackId).toBe("mail");
+    expect(store.state.dockFocus).toBeNull();
+  });
+
+  test("highlight clamps at both ends and up returns focus to the stage", () => {
+    const store = seeded();
+    store.focusDock();
+    expect(store.swipe(1)).toBeFalse();
+    expect(store.state.dockFocus).toBe(2);
+    store.swipe(-1);
+    store.swipe(-1);
+    expect(store.state.dockFocus).toBe(0);
+    expect(store.swipe(-1)).toBeFalse();
+    expect(store.blurDock()).toBeTrue();
+    expect(store.state.dockFocus).toBeNull();
+  });
+
+  test("an agent-driven surface change clears the dock highlight", () => {
+    const store = seeded();
+    store.focusDock();
+    store.showStack("people", "People", "person", [{ id: "p1", title: "Kelvin" }]);
+    expect(store.state.dockFocus).toBeNull();
+  });
+
+  test("focusDock does nothing with an empty dock", () => {
+    const store = new Store();
+    expect(store.focusDock()).toBeFalse();
+    expect(store.state.dockFocus).toBeNull();
+  });
+
+  test("view state reports the highlighted dock tab only while picking", () => {
+    const store = seeded();
+    expect(store.getViewState().dockHighlight).toBeUndefined();
+    store.focusDock();
+    store.swipe(-1);
+    store.swipe(-1);
+    expect(store.getViewState().dockHighlight).toBe("calendar");
+  });
+});

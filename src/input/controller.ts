@@ -1,6 +1,6 @@
 import type { Store } from "../state/store";
 
-export type ControllerAction = "previous" | "next" | "select";
+export type ControllerAction = "previous" | "next" | "select" | "down" | "up";
 export type ControllerBindings = Partial<Record<ControllerAction, string>>;
 
 type SavedController = {
@@ -10,7 +10,18 @@ type SavedController = {
 };
 
 const STORAGE_KEY = "webmcp-surface-controller-v1";
+// Three required buttons make any ring work; Down/Up are optional extras for
+// 4-direction rings (D-pad model: Down focuses the dock, Up returns).
 const ACTIONS: ControllerAction[] = ["previous", "next", "select"];
+const OPTIONAL_ACTIONS: ControllerAction[] = ["down", "up"];
+const SETUP_ORDER: ControllerAction[] = [...ACTIONS, ...OPTIONAL_ACTIONS];
+const ACTION_LABELS: Record<ControllerAction, string> = {
+  previous: "Previous",
+  next: "Next",
+  select: "Select",
+  down: "Down",
+  up: "Up",
+};
 const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta", "CapsLock", "NumLock"]);
 
 export function keyInputToken(key: string): string | null {
@@ -87,10 +98,14 @@ export class WheelInputDetector {
   }
 }
 
-export type LocalSelectResult = "opened" | "selected" | "closed" | "dismissed" | "confirmation-required" | "none";
+export type LocalSelectResult = "opened" | "selected" | "closed" | "dismissed" | "switched" | "confirmation-required" | "none";
 
 export function activateFocused(store: Store): LocalSelectResult {
   const state = store.state;
+  // While the D-pad highlight sits on the dock, Select opens that tab.
+  if (state.dockFocus !== null) {
+    return store.activateDockFocus() ? "switched" : "none";
+  }
   if (state.view === "done") {
     store.dismissDone();
     return "dismissed";
@@ -119,7 +134,7 @@ function validBindings(value: unknown): ControllerBindings {
   if (!value || typeof value !== "object") return {};
   const source = value as Record<string, unknown>;
   const bindings: ControllerBindings = {};
-  for (const action of ACTIONS) {
+  for (const action of SETUP_ORDER) {
     if (typeof source[action] === "string" && source[action]) bindings[action] = source[action] as string;
   }
   return bindings;
@@ -131,6 +146,7 @@ export class ControllerInput {
   private panel: HTMLElement;
   private closeButton: HTMLButtonElement;
   private startButton: HTMLButtonElement;
+  private skipButton: HTMLButtonElement;
   private resetButton: HTMLButtonElement;
   private modeToggle: HTMLInputElement;
   private status: HTMLElement;
@@ -147,6 +163,7 @@ export class ControllerInput {
     this.panel = document.querySelector<HTMLElement>("#controller-panel")!;
     this.closeButton = document.querySelector<HTMLButtonElement>("#controller-close")!;
     this.startButton = document.querySelector<HTMLButtonElement>("#controller-start")!;
+    this.skipButton = document.querySelector<HTMLButtonElement>("#controller-skip")!;
     this.resetButton = document.querySelector<HTMLButtonElement>("#controller-reset")!;
     this.modeToggle = document.querySelector<HTMLInputElement>("#controller-mode")!;
     this.status = document.querySelector<HTMLElement>("#controller-status")!;
@@ -156,6 +173,7 @@ export class ControllerInput {
     this.button.addEventListener("click", () => this.openPanel());
     this.closeButton.addEventListener("click", () => this.closePanel());
     this.startButton.addEventListener("click", () => this.beginSetup());
+    this.skipButton.addEventListener("click", () => this.finishSetup());
     this.resetButton.addEventListener("click", () => this.reset());
     this.modeToggle.addEventListener("change", () => this.setEnabled(this.modeToggle.checked));
     window.addEventListener("keydown", this.onKeyDown, true);
@@ -249,7 +267,7 @@ export class ControllerInput {
 
   private capture(token: string) {
     if (this.learningIndex < 0 || performance.now() < this.captureReadyAt) return false;
-    const action = ACTIONS[this.learningIndex];
+    const action = SETUP_ORDER[this.learningIndex];
     if (!action) return false;
     if (Object.values(this.bindings).includes(token)) {
       this.status.textContent = `${describeInputToken(token)} is already used — press a different button`;
@@ -259,21 +277,40 @@ export class ControllerInput {
     this.learningIndex += 1;
     this.captureReadyAt = performance.now() + 250;
     this.wheel.reset();
-    if (this.learningIndex >= ACTIONS.length) {
-      this.learningIndex = -1;
-      this.setupBackup = null;
-      this.enabled = true;
-      this.save();
-      this.feed("controller · setup complete · Ring Mode on");
-    }
-    this.render();
+    if (this.learningIndex >= SETUP_ORDER.length) this.finishSetup();
+    else this.render();
     return true;
+  }
+
+  // Ends setup with whatever is learned so far — reached automatically after
+  // all five steps, or via Skip once the three required buttons are in.
+  private finishSetup() {
+    if (this.learningIndex < 0 || !this.configured) return;
+    this.learningIndex = -1;
+    this.setupBackup = null;
+    this.enabled = true;
+    this.save();
+    this.feed("controller · setup complete · Ring Mode on");
+    this.render();
   }
 
   private perform(action: ControllerAction) {
     if (action === "previous" || action === "next") {
       this.store.swipe(action === "next" ? 1 : -1);
       this.feed(`controller · ${action}`);
+      return;
+    }
+    if (action === "down" || action === "up") {
+      // Reading beats navigating: in an open document, vertical ring buttons scroll it.
+      if (this.store.state.view === "reader") {
+        document.querySelector(".reader")?.scrollBy({ top: action === "down" ? 90 : -90, behavior: "smooth" });
+        return;
+      }
+      if (action === "down") {
+        if (this.store.focusDock()) this.feed("controller · dock focus");
+      } else if (this.store.blurDock()) {
+        this.feed("controller · back to cards");
+      }
       return;
     }
     const result = activateFocused(this.store);
@@ -325,6 +362,33 @@ export class ControllerInput {
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault();
       this.store.swipe(event.key === "ArrowRight" ? 1 : -1);
+      return;
+    }
+    // D-pad baseline, mirrored 1:1 by rings that emit real arrow keys:
+    // Down drops focus onto the dock, Up (or Escape) returns to the stage.
+    // The reader is untouched — its scroll handling ran above.
+    if (event.key === "ArrowDown") {
+      if (this.store.focusDock()) {
+        event.preventDefault();
+        this.feed("controller · dock focus");
+      }
+      return;
+    }
+    if (event.key === "ArrowUp" || event.key === "Escape") {
+      if (this.store.blurDock()) event.preventDefault();
+      return;
+    }
+    // Enter = the D-pad's A button: opens the highlighted dock tab or the
+    // focused card. Local-only — calendar writes and sending still need voice.
+    if (event.key === "Enter") {
+      const result = activateFocused(this.store);
+      if (result === "none") return;
+      event.preventDefault();
+      this.feed(
+        result === "confirmation-required"
+          ? "controller · confirm the calendar action by voice"
+          : `controller · ${result}`,
+      );
     }
   };
 
@@ -385,17 +449,20 @@ export class ControllerInput {
     this.startButton.textContent = this.configured ? "Relearn controls" : "Start setup";
     this.resetButton.hidden = !this.configured;
 
-    for (const action of ACTIONS) {
+    for (const action of SETUP_ORDER) {
       const row = this.panel.querySelector<HTMLElement>(`[data-controller-action='${action}']`)!;
       const value = row.querySelector<HTMLElement>(".controller-binding")!;
-      row.classList.toggle("current", ACTIONS[this.learningIndex] === action);
+      row.classList.toggle("current", SETUP_ORDER[this.learningIndex] === action);
       row.classList.toggle("learned", Boolean(this.bindings[action]));
       value.textContent = describeInputToken(this.bindings[action]);
     }
+    this.skipButton.hidden = !(this.learningIndex >= ACTIONS.length && this.learningIndex < SETUP_ORDER.length);
 
-    const current = ACTIONS[this.learningIndex];
-    if (current) this.status.textContent = `Press ${current} once on the ring`;
-    else if (!this.configured) this.status.textContent = "Teach the page three ring buttons";
+    const current = SETUP_ORDER[this.learningIndex];
+    if (current && OPTIONAL_ACTIONS.includes(current))
+      this.status.textContent = `Optional: press ${ACTION_LABELS[current]} on the ring — or Skip to use 3 buttons`;
+    else if (current) this.status.textContent = `Press ${ACTION_LABELS[current]} once on the ring`;
+    else if (!this.configured) this.status.textContent = "Teach the page three ring buttons — Down/Up are optional";
     else if (this.enabled) this.status.textContent = "Ring Mode is on · learned controls only";
     else this.status.textContent = "Ready · enable Ring Mode when using the ring";
   }

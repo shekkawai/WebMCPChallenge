@@ -23,10 +23,16 @@ artifact in the repo — keep it and the code in agreement.
 - **`surface_get_view_state` returns IDs, titles, and `hasContent`/`hasImage` flags only** —
   never email bodies, never base64 image data. It is the deixis channel ("this one"), not
   a data exfiltration route.
-- **Ring/controller input is opt-in and learned.** Outside Ring Mode, vertical wheel,
-  ArrowUp/Down, PageUp/Down and ordinary clicks must do nothing. A learned wheel binding
-  must never hijack scrolling inside an open reader. These rules exist because each was a
-  real bug found in a browser pass, not by tests.
+- **Ring/controller input is opt-in and learned; the keyboard D-pad is the baseline.**
+  Since the D-pad model (2026-08-30): ←/→ move focus, ↓ drops a visible highlight onto
+  the dock, ←/→ then move it, Enter/Select opens the highlighted tab or focused card,
+  ↑/Escape return to the stage — all local-only actions. `store.swipe()` routes to the
+  dock highlight whenever `dockFocus !== null`, so palm/ring/keys stay one verb. Outside
+  Ring Mode, the vertical wheel, PageUp/Down and ordinary clicks still must do nothing,
+  and inside an open reader vertical keys/wheel always scroll it (reading beats
+  navigating) — a learned binding must never hijack that. Ring setup: 3 required buttons,
+  Down/Up optional (Skip finishes with 3). These rules exist because each was a real bug
+  found in a browser pass, not by tests.
 - **Camera is opt-in, and the pixels never leave the tab.** The privacy line ("the agent
   coached me and never saw me") is load-bearing for the submission.
 - Camera, ring, keyboard, mouse and the agent are **independently stackable channels**,

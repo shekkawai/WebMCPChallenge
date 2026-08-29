@@ -144,3 +144,17 @@ describe("ring / clicker input", () => {
     expect(readerScrollStep("Enter", 600)).toBeNull();
   });
 });
+
+describe("Dock focus via controller select", () => {
+  test("select opens the highlighted dock tab instead of the focused card", () => {
+    const store = new Store();
+    store.showStack("mail", "Mail", "email", [{ id: "m1", title: "Message", content: "Body" }]);
+    store.showStack("drive", "Files", "file", [{ id: "d1", title: "Doc" }]);
+    store.focusDock();
+    store.swipe(-1);
+    expect(activateFocused(store)).toBe("switched");
+    expect(store.state.activeStackId).toBe("mail");
+    expect(store.state.view).toBe("stack");
+    expect(store.state.dockFocus).toBeNull();
+  });
+});
