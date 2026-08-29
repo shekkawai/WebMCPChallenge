@@ -71,10 +71,14 @@ Responsive design adapted layout to screens; this surface adapts *interaction*
 to context. The **Glasses** toggle shows what that means: the wearer's point
 of view through one lens, with the same live page projected inside the lens as
 a monocular AR display — driven by voice (through the agent) and a ring, with
-no keyboard in reach. The panel is repositioned by JS as the window resizes so
-it always stays on the glass (`LENS` in `src/views/glasses.ts` holds the lens
-coordinates if the photo changes). Nothing about the page changes between
-contexts; only the available input channels do.
+no keyboard in reach. This is a real **glasses breakpoint**, not a scaled-down
+screen: the app is given a genuine near-square viewport carved into the lens,
+so the layout reflows (compact chip, tighter cards, denser calendar) and text
+stays readable — the same way a phone breakpoint reflows a desktop page. JS
+re-pins the box as the window resizes so it always stays on the glass (`LENS`
+in `src/views/glasses.ts` holds the lens coordinates if the photo changes).
+The page's capabilities don't change between contexts; only the input
+channels and the layout do.
 
 ![Glasses simulation](shots/glasses.png)
 

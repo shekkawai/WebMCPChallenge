@@ -5,11 +5,13 @@
 // channel (agent tools, palm, ring, keys) keeps working.
 const STORAGE_KEY = "webmcp-surface-glasses";
 
-// Where the lens sits inside the photo, as fractions of the image, and how
-// wide the projected panel should be relative to the lens. Tuned by eye
-// against public/glasses-pov.jpg — adjust here if the photo changes.
+// Where the lens sits inside the photo, as fractions of the image, and the
+// display box carved into it. Tuned by eye against public/glasses-pov.jpg —
+// adjust here if the photo changes. `aspect` is the glasses breakpoint: the
+// app is given a real near-square viewport of this shape (not scaled down),
+// so the layout genuinely reflows to fit the lens.
 const IMAGE_ASPECT = 1920 / 1334;
-const LENS = { cx: 0.55, cy: 0.535, panelWidth: 0.4 };
+const LENS = { cx: 0.523, cy: 0.54, width: 0.44, aspect: 1.18 };
 
 function feed(line: string) {
   document.dispatchEvent(new CustomEvent<string>("agent-feed", { detail: line }));
@@ -57,8 +59,13 @@ export class GlassesMode {
     this.chrome.hidden = !this.enabled;
     this.button.textContent = this.enabled ? "Glasses on" : "Glasses";
     this.button.classList.toggle("on", this.enabled);
-    if (this.enabled) this.reposition();
-    else this.app.style.transform = "";
+    if (this.enabled) {
+      this.reposition();
+    } else {
+      for (const prop of ["position", "left", "top", "width", "height", "transform"] as const) {
+        this.app.style[prop] = "";
+      }
+    }
     try {
       localStorage.setItem(STORAGE_KEY, this.enabled ? "1" : "0");
     } catch {
@@ -68,8 +75,8 @@ export class GlassesMode {
   }
 
   // The photo covers the viewport (object-fit: cover). Recompute where the
-  // lens landed on screen and pin the scaled app to it, so the UI stays on
-  // the glasses at any window size.
+  // lens landed on screen and give the app a real box of that size — resize,
+  // not scale, so the UI reflows to the lens shape and text stays readable.
   private reposition() {
     if (!this.enabled) return;
     const vw = window.innerWidth;
@@ -80,8 +87,15 @@ export class GlassesMode {
     const offsetY = (vh - dispH) / 2;
     const cx = offsetX + LENS.cx * dispW;
     const cy = offsetY + LENS.cy * dispH;
-    const s = (LENS.panelWidth * dispW) / vw;
-    this.app.style.transform = `translate(${(cx - vw / 2).toFixed(1)}px, ${(cy - vh / 2).toFixed(1)}px) scale(${s.toFixed(4)})`;
+    const w = LENS.width * dispW;
+    const h = w / LENS.aspect;
+    Object.assign(this.app.style, {
+      position: "fixed",
+      left: `${(cx - w / 2).toFixed(1)}px`,
+      top: `${(cy - h / 2).toFixed(1)}px`,
+      width: `${w.toFixed(1)}px`,
+      height: `${h.toFixed(1)}px`,
+    });
   }
 
   private buildBackdrop(): HTMLElement {
