@@ -90,3 +90,31 @@ describe("surface tool flow", () => {
     expect(JSON.stringify(state)).not.toContain("example.com");
   });
 });
+
+describe("surface_dismiss", () => {
+  test("registers only while surfaces exist and removes dock tabs", async () => {
+    const store = new Store();
+    const context = new FakeContext();
+    const adapter = new WebMCPAdapter(context);
+    wireTools(store, adapter);
+
+    expect(context.tools.has("surface_dismiss")).toBeFalse();
+    await context.tools.get("surface_show_emails").execute({
+      emails: [{ id: "mail-1", from: "a@example.com", subject: "Hello", body: "Body" }],
+    });
+    await context.tools.get("surface_show_files").execute({ files: [{ id: "d1", name: "Doc", type: "doc" }] });
+    expect(context.tools.has("surface_dismiss")).toBeTrue();
+
+    expect(await context.tools.get("surface_dismiss").execute({ id: "nope" })).toEqual({
+      error: "surface 'nope' does not exist",
+    });
+
+    const afterMail = await context.tools.get("surface_dismiss").execute({ id: "mail" });
+    expect(afterMail.surfaces.map((s: any) => s.id)).toEqual(["drive"]);
+    expect(store.state.view).toBe("stack");
+
+    await context.tools.get("surface_dismiss").execute({ id: "drive" });
+    expect(store.state.view).toBe("idle");
+    expect(context.tools.has("surface_dismiss")).toBeFalse();
+  });
+});

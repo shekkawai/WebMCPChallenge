@@ -45,6 +45,7 @@ The agent's connectors know your data; the page knows your body and your focus. 
 | `surface_select_item` | agent → page | Select from a `purpose: "choose"` presentation; dynamically registered only while choices are shown |
 | `surface_toggle_item` | agent → page | Mark/unmark items in a `purpose: "triage"` presentation; dynamically registered only during triage |
 | `surface_switch` | agent → page | Bring a rendered surface to the front |
+| `surface_dismiss` | agent → page | Remove a surface from the dock entirely (“close the mail panel”); registered only while surfaces exist |
 | `surface_open_item` | agent → page | Expand the focused card full-screen — *only while a deck is shown* |
 | `surface_close_item` | agent → page | Close the reader — *only while the reader is open* |
 | `surface_get_view_state` | page → agent | What the user is looking at (deixis: "this one") |

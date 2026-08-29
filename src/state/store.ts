@@ -241,6 +241,43 @@ export class Store {
     return items[idx];
   }
 
+  // Remove a rendered surface from the dock — the OS-taskbar "close" verb.
+  // Dismissing what is on screen falls back to another stack, then the
+  // calendar, then idle. Calendar events survive a dismissal: re-showing the
+  // calendar brings them back.
+  dismissSurface(id: string): boolean {
+    if (id === "calendar") {
+      if (!this.state.hasCalendar) return false;
+      const fallback = this.state.stacks[this.state.stacks.length - 1] ?? null;
+      const onCalendar = this.state.view === "calendar";
+      this.state = {
+        ...this.state,
+        hasCalendar: false,
+        proposals: [],
+        view: onCalendar ? (fallback ? "stack" : "idle") : this.state.view,
+        activeStackId: onCalendar && fallback ? fallback.id : this.state.activeStackId,
+        dockFocus: null,
+      };
+      this.emit();
+      return true;
+    }
+    const idx = this.state.stacks.findIndex((s) => s.id === id);
+    if (idx < 0) return false;
+    const stacks = this.state.stacks.filter((s) => s.id !== id);
+    const wasActive = this.state.activeStackId === id;
+    const fallback = wasActive ? (stacks[idx - 1] ?? stacks[idx] ?? null) : null;
+    const wasShowing = wasActive && (this.state.view === "stack" || this.state.view === "reader");
+    this.state = {
+      ...this.state,
+      stacks,
+      activeStackId: wasActive ? (fallback?.id ?? null) : this.state.activeStackId,
+      view: wasShowing ? (fallback ? "stack" : this.state.hasCalendar ? "calendar" : "idle") : this.state.view,
+      dockFocus: null,
+    };
+    this.emit();
+    return true;
+  }
+
   switchTo(target: string): boolean {
     if (target === "calendar") {
       if (!this.state.hasCalendar) return false;

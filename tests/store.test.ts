@@ -142,3 +142,53 @@ describe("Dock D-pad focus", () => {
     expect(store.getViewState().dockHighlight).toBe("calendar");
   });
 });
+
+describe("Dismissing surfaces", () => {
+  test("dismissing the active stack falls back to the neighbouring stack", () => {
+    const store = new Store();
+    store.showStack("mail", "Mail", "email", [{ id: "m1", title: "First" }]);
+    store.showStack("options", "Options", "option", [{ id: "1", title: "Aurora" }]);
+    expect(store.dismissSurface("options")).toBeTrue();
+    expect(store.state.stacks.map((s) => s.id)).toEqual(["mail"]);
+    expect(store.state.activeStackId).toBe("mail");
+    expect(store.state.view).toBe("stack");
+  });
+
+  test("dismissing the last stack falls back to the calendar, then idle", () => {
+    const store = new Store();
+    store.showCalendar([{ date: "2026-09-04", title: "Event" }], "week");
+    store.showStack("mail", "Mail", "email", [{ id: "m1", title: "First" }]);
+    expect(store.dismissSurface("mail")).toBeTrue();
+    expect(store.state.view).toBe("calendar");
+    expect(store.dismissSurface("calendar")).toBeTrue();
+    expect(store.state.view).toBe("idle");
+    expect(store.state.hasCalendar).toBeFalse();
+  });
+
+  test("dismissing the calendar clears proposals but keeps events for a re-show", () => {
+    const store = new Store();
+    store.showCalendar([{ date: "2026-09-04", title: "Event" }], "week");
+    store.proposeSlots([{ date: "2026-09-11", time: "19:00" }]);
+    expect(store.dismissSurface("calendar")).toBeTrue();
+    expect(store.state.proposals).toHaveLength(0);
+    expect(store.state.events).toHaveLength(1);
+    store.showCalendar(store.state.events, "week");
+    expect(store.state.hasCalendar).toBeTrue();
+  });
+
+  test("dismissing a background stack leaves the current view alone", () => {
+    const store = new Store();
+    store.showStack("mail", "Mail", "email", [{ id: "m1", title: "First" }]);
+    store.showStack("drive", "Files", "file", [{ id: "d1", title: "Doc" }]);
+    store.openItem("d1");
+    expect(store.dismissSurface("mail")).toBeTrue();
+    expect(store.state.view).toBe("reader");
+    expect(store.state.activeStackId).toBe("drive");
+  });
+
+  test("unknown surface ids are rejected", () => {
+    const store = new Store();
+    expect(store.dismissSurface("mail")).toBeFalse();
+    expect(store.dismissSurface("calendar")).toBeFalse();
+  });
+});

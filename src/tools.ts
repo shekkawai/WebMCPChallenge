@@ -661,6 +661,22 @@ export function wireTools(
     },
   };
 
+  const dismissTool: ToolDef = {
+    name: "surface_dismiss",
+    description:
+      "Remove a rendered surface from the dock entirely: 'calendar' or a stack id (e.g. 'mail', 'options'). Use when the user asks to close or dismiss a panel/tab they are done with. To close the full-screen reader instead, use surface_close_item. Dismissal is page-local and reversible — re-rendering the surface brings it back.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "'calendar' or a stack id — surface_get_view_state lists what exists" },
+      },
+      required: ["id"],
+    },
+    execute: ({ id }: any) => {
+      return store.dismissSurface(String(id)) ? store.getViewState() : { error: `surface '${String(id)}' does not exist` };
+    },
+  };
+
   let presentTool = createSurfacePresentTool(store, getContext);
   let lastSig = "";
   const syncTools = (s: Store["state"]) => {
@@ -669,10 +685,12 @@ export function wireTools(
     const optionsOn = stackOn && stack?.kind === "option";
     const chooseOn = stackOn && stack?.purpose === "choose";
     const triageOn = stackOn && stack?.purpose === "triage";
-    const sig = [s.view, s.proposals.length > 0, optionsOn, chooseOn, triageOn, getContext()].join("|");
+    const hasSurfaces = s.hasCalendar || s.stacks.length > 0;
+    const sig = [s.view, s.proposals.length > 0, optionsOn, chooseOn, triageOn, hasSurfaces, getContext()].join("|");
     if (sig === lastSig) return;
     lastSig = sig;
     const tools = [presentTool, ...base];
+    if (hasSurfaces) tools.push(dismissTool);
     if (s.view === "calendar") {
       tools.push(...calendarTools);
       if (s.proposals.length) tools.push(confirmSlotTool);
