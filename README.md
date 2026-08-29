@@ -62,6 +62,8 @@ bun run dev
 
 Deploy the production build to Cloudflare Workers with `bun run deploy`.
 
+Every pull request is automatically tested and built. Every push to `main` that passes those checks is deployed to Cloudflare Workers by `.github/workflows/deploy.yml`. The repository requires `CLOUDFLARE_ACCOUNT_ID` and a Worker-scoped `CLOUDFLARE_API_TOKEN` as GitHub Actions secrets.
+
 ## Status
 
 - [x] WebMCP adapter (`document.modelContext`, AbortSignal-owned dynamic registrations; legacy fallback retained)
