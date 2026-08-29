@@ -253,6 +253,8 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
       <button id="camera-toggle" type="button">Camera</button>
       <span class="sep">·</span>
       <button id="controller-toggle" type="button" data-controller-ui>Controller</button>
+      <span class="sep">·</span>
+      <button id="glasses-toggle" type="button">Glasses</button>
     </div>
     <main id="stage"></main>
     <nav id="dock" class="glass"></nav>

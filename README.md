@@ -58,8 +58,22 @@ bun run dev
 # (also: drive | calendar | month | reader | slots | options | chosen | people | done | photo)
 # Click Camera to enable palm swipes; ← → remains the no-camera fallback
 # Click Controller to teach a BLE ring/clicker its Previous, Next, and Select buttons
+# Click Glasses (or press G, or add &glasses=1) for the monocular smart-glasses
+#   simulation — the surface projects into the right lens only, and every input
+#   channel keeps working underneath. Purely presentational.
 # window.__surface exposes the store, WebMCP adapter, and gesture controller
 ```
+
+### Glasses simulation (smart-responsive preview)
+
+Responsive design adapted layout to screens; this surface adapts *interaction*
+to context. The **Glasses** toggle shows what that means: the same page,
+projected as a monocular display in the right lens — matching real shipping
+hardware — driven by voice (through the agent) and a ring, with no keyboard in
+reach. Nothing about the page changes between contexts; only the available
+input channels do.
+
+![Glasses simulation](shots/glasses.png)
 
 ### Testing the camera gesture
 
