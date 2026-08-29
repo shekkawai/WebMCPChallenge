@@ -14,6 +14,21 @@ body {
 
 #app { position: relative; }
 
+/* ---- glass scrollbars ---- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 99px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.32); background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.24) transparent; }
+}
+
 .orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.5; pointer-events: none; }
 .o1 { width: 560px; height: 560px; left: -140px; top: -180px; background: #23416e; }
 .o2 { width: 480px; height: 480px; right: -120px; top: 28%; background: #3b2a56; }

@@ -34,6 +34,17 @@ export function actionForToken(bindings: ControllerBindings, token: string | nul
   return ACTIONS.find((action) => bindings[action] === token) ?? null;
 }
 
+// Vertical scroll keys read the open document instead of acting on the deck,
+// mirroring the wheel's "reading beats navigating" rule. Returns the scroll
+// delta in px for a reader viewport of the given height, or null for other keys.
+export function readerScrollStep(key: string, viewportHeight: number): number | null {
+  if (key === "ArrowUp") return -90;
+  if (key === "ArrowDown") return 90;
+  if (key === "PageUp") return -Math.round(viewportHeight * 0.8);
+  if (key === "PageDown") return Math.round(viewportHeight * 0.8);
+  return null;
+}
+
 export function describeInputToken(token: string | undefined): string {
   if (!token) return "Not learned";
   const [kind, value, direction] = token.split(":");
@@ -274,6 +285,18 @@ export class ControllerInput {
   }
 
   private onKeyDown = (event: KeyboardEvent) => {
+    // Reading beats navigating, for keys as for the wheel: while a document is
+    // open, vertical scroll keys scroll it — even when learned as ring
+    // bindings, and with key repeat allowed so a held key keeps scrolling.
+    if (this.learningIndex < 0 && !isInteractiveTarget(event.target) && this.store.state.view === "reader") {
+      const step = readerScrollStep(event.key, document.querySelector(".reader")?.clientHeight ?? 0);
+      if (step !== null) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        document.querySelector(".reader")?.scrollBy({ top: step, behavior: "smooth" });
+        return;
+      }
+    }
     if (event.repeat) return;
     if (this.learningIndex >= 0) {
       if (event.key === "Escape") {

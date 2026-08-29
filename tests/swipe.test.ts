@@ -8,6 +8,7 @@ import {
   describeInputToken,
   keyInputToken,
   pointerInputToken,
+  readerScrollStep,
   WheelInputDetector,
   wheelInputToken,
 } from "../src/input/controller";
@@ -132,5 +133,14 @@ describe("ring / clicker input", () => {
     expect(activateFocused(store)).toBe("confirmation-required");
     expect(store.state.proposals).toHaveLength(1);
     expect(store.state.done).toBeNull();
+  });
+
+  test("vertical scroll keys map to reader scroll steps, others do not", () => {
+    expect(readerScrollStep("ArrowDown", 600)).toBe(90);
+    expect(readerScrollStep("ArrowUp", 600)).toBe(-90);
+    expect(readerScrollStep("PageDown", 600)).toBe(480);
+    expect(readerScrollStep("PageUp", 600)).toBe(-480);
+    expect(readerScrollStep("ArrowLeft", 600)).toBeNull();
+    expect(readerScrollStep("Enter", 600)).toBeNull();
   });
 });
