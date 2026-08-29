@@ -65,3 +65,38 @@ describe("palm swipe", () => {
     expect(detector.push(shifted(palm, 0.5), 1400)).toBeNull();
   });
 });
+
+import { swipeForKey, WheelSwipeDetector } from "../src/gesture/swipe";
+
+describe("ring / clicker input", () => {
+  test("maps every arrow and page key a BLE ring mode may emit", () => {
+    expect(swipeForKey("ArrowRight")).toBe(1);
+    expect(swipeForKey("ArrowDown")).toBe(1);
+    expect(swipeForKey("PageDown")).toBe(1);
+    expect(swipeForKey("ArrowLeft")).toBe(-1);
+    expect(swipeForKey("ArrowUp")).toBe(-1);
+    expect(swipeForKey("PageUp")).toBe(-1);
+    expect(swipeForKey("Enter")).toBeNull();
+    expect(swipeForKey("a")).toBeNull();
+  });
+
+  test("wheel flick fires one swipe, slow drift fires none", () => {
+    const detector = new WheelSwipeDetector();
+    expect(detector.push(0, 60, 0)).toBeNull();
+    expect(detector.push(0, 80, 16)).toBe(1);
+    expect(detector.push(0, 200, 100)).toBeNull();
+    expect(detector.push(0, -200, 700)).toBe(-1);
+  });
+
+  test("direction change resets the accumulator", () => {
+    const detector = new WheelSwipeDetector();
+    expect(detector.push(100, 0, 0)).toBeNull();
+    expect(detector.push(-100, 0, 16)).toBeNull();
+    expect(detector.push(-30, 0, 32)).toBe(-1);
+  });
+
+  test("horizontal delta wins when larger", () => {
+    const detector = new WheelSwipeDetector();
+    expect(detector.push(-150, 40, 0)).toBe(-1);
+  });
+});

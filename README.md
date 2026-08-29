@@ -75,6 +75,17 @@ A swipe needs a deliberate sideways sweep (~15% of the frame width within
 ~0.3s). Slow drift and closed fists are ignored by design; after each swipe
 there is a ~0.5s cooldown before the next one can fire.
 
+### Ring / clicker / wheel input
+
+Cheap BLE "scrolling rings" and presenter clickers pair as plain Bluetooth
+keyboards, so they drive the surface with no pairing code at all: every arrow
+key and PageUp/PageDown maps to prev/next, and mouse-wheel flicks (some rings,
+trackpads, Magic Mouse) navigate too — accumulated with a threshold and
+cooldown so one flick is one swipe. Inside the reader the wheel scrolls the
+document instead of navigating. If a device's button isn't mapped, pressing it
+prints `input · key "…" (unmapped)` in the on-screen agent feed, so any ring
+self-identifies in one press.
+
 Deploy the production build to Cloudflare Workers with `bun run deploy`.
 
 Every pull request is automatically tested and built. Every push to `main` that passes those checks is deployed to Cloudflare Workers by `.github/workflows/deploy.yml`. The repository requires `CLOUDFLARE_ACCOUNT_ID` and a Worker-scoped `CLOUDFLARE_API_TOKEN` as GitHub Actions secrets.

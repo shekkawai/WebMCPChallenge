@@ -2,7 +2,7 @@ import { Store } from "./state/store";
 import { WebMCPAdapter } from "./webmcp/adapter";
 import { wireTools } from "./tools";
 import { renderApp } from "./views/renderer";
-import { attachCameraSwipe, attachKeyboardSwipe, type CameraSwipeController } from "./gesture/swipe";
+import { attachCameraSwipe, attachKeyboardSwipe, attachWheelSwipe, type CameraSwipeController } from "./gesture/swipe";
 import { localDateISO } from "./utils";
 
 const store = new Store();
@@ -11,6 +11,7 @@ const mcp = new WebMCPAdapter();
 renderApp(document.getElementById("app")!, store, mcp.available);
 wireTools(store, mcp);
 attachKeyboardSwipe(store);
+attachWheelSwipe(store);
 const gesture = attachCameraSwipe(store);
 
 declare global {
