@@ -407,44 +407,44 @@ body {
   border-radius: 16px; margin-top: 20px; background: rgba(0, 0, 0, 0.25);
 }
 
-/* ---- glasses simulation (monocular, right eye) ---- */
-/* The whole app shrinks into the right lens; the environment (body gradient
-   + a faint room glow) shows through both lenses. Purely presentational —
-   every input channel keeps working underneath. */
-body.glasses-on {
-  background:
-    radial-gradient(ellipse 46% 58% at 27% 51%, rgba(56, 82, 132, 0.20), transparent 70%),
-    radial-gradient(ellipse 46% 58% at 73% 51%, rgba(74, 58, 110, 0.16), transparent 70%),
-    radial-gradient(ellipse 90% 70% at 50% -10%, rgba(64, 96, 160, 0.14), transparent),
-    #05070d;
-}
-body.glasses-on #app {
-  transform: translate(23%, 1.5%) scale(0.34);
-  border-radius: 28px;
-  overflow: hidden;
-  outline: 1px solid rgba(150, 220, 255, 0.35);
-  box-shadow:
-    0 0 90px rgba(110, 190, 255, 0.22),
-    0 0 12px rgba(150, 220, 255, 0.30),
-    inset 0 0 120px rgba(20, 40, 80, 0.35);
-  background: rgba(8, 11, 20, 0.72);
-  transition: transform 0.45s cubic-bezier(0.3, 0.9, 0.3, 1);
+/* ---- glasses simulation (monocular AR display) ---- */
+/* A POV photo of looking through one lens covers the viewport; the live app
+   is scaled and pinned inside the lens by JS (glasses.ts), so it stays on
+   the glasses at any window size. Purely presentational — every input
+   channel keeps working underneath. */
+#glasses-backdrop { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+#glasses-backdrop[hidden] { display: none; }
+#glasses-backdrop img {
+  width: 100%; height: 100%; object-fit: cover; object-position: center;
+  filter: saturate(0.82) brightness(0.9);
+  user-select: none;
 }
 
-#glasses-overlay { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
-#glasses-overlay svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-#glasses-overlay .lens-rim { fill: none; stroke: rgba(255, 255, 255, 0.20); stroke-width: 7; }
-#glasses-overlay .glasses-bridge,
-#glasses-overlay .glasses-temple { fill: none; stroke: rgba(255, 255, 255, 0.16); stroke-width: 9; stroke-linecap: round; }
+body.glasses-on #app {
+  position: relative; z-index: 5;
+  border-radius: 26px;
+  overflow: hidden;
+  outline: 1px solid rgba(170, 225, 255, 0.4);
+  box-shadow:
+    0 0 80px rgba(120, 195, 255, 0.28),
+    0 0 14px rgba(170, 225, 255, 0.35),
+    0 30px 80px rgba(0, 0, 0, 0.5);
+  background: rgba(7, 10, 18, 0.86);
+}
+
+#glasses-chrome { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
+#glasses-chrome[hidden] { display: none; }
 .glasses-label {
-  position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
-  font-size: 11px; letter-spacing: 0.22em; color: rgba(255, 255, 255, 0.4);
+  position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%);
+  font-size: 11px; letter-spacing: 0.22em; color: rgba(255, 255, 255, 0.75);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
   white-space: nowrap;
 }
 #glasses-exit {
   position: absolute; top: 22px; right: 26px; pointer-events: auto;
-  border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 99px;
   padding: 7px 14px; font: inherit; font-size: 12px; cursor: pointer;
-  color: rgba(255, 255, 255, 0.75); background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9); background: rgba(10, 14, 22, 0.55);
+  backdrop-filter: blur(10px);
 }
-#glasses-exit:hover { color: #fff; background: rgba(255, 255, 255, 0.16); }
+#glasses-exit:hover { color: #fff; background: rgba(10, 14, 22, 0.8); }

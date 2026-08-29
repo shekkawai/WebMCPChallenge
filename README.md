@@ -58,20 +58,23 @@ bun run dev
 # (also: drive | calendar | month | reader | slots | options | chosen | people | done | photo)
 # Click Camera to enable palm swipes; ← → remains the no-camera fallback
 # Click Controller to teach a BLE ring/clicker its Previous, Next, and Select buttons
-# Click Glasses (or press G, or add &glasses=1) for the monocular smart-glasses
-#   simulation — the surface projects into the right lens only, and every input
-#   channel keeps working underneath. Purely presentational.
+# Click Glasses (or press G, or add &glasses=1) for the smart-glasses
+#   simulation — a POV shot through one lens, with the live surface pinned
+#   inside the lens at any window size. Every input channel keeps working
+#   underneath. Purely presentational.
 # window.__surface exposes the store, WebMCP adapter, and gesture controller
 ```
 
 ### Glasses simulation (smart-responsive preview)
 
 Responsive design adapted layout to screens; this surface adapts *interaction*
-to context. The **Glasses** toggle shows what that means: the same page,
-projected as a monocular display in the right lens — matching real shipping
-hardware — driven by voice (through the agent) and a ring, with no keyboard in
-reach. Nothing about the page changes between contexts; only the available
-input channels do.
+to context. The **Glasses** toggle shows what that means: the wearer's point
+of view through one lens, with the same live page projected inside the lens as
+a monocular AR display — driven by voice (through the agent) and a ring, with
+no keyboard in reach. The panel is repositioned by JS as the window resizes so
+it always stays on the glass (`LENS` in `src/views/glasses.ts` holds the lens
+coordinates if the photo changes). Nothing about the page changes between
+contexts; only the available input channels do.
 
 ![Glasses simulation](shots/glasses.png)
 
