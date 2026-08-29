@@ -65,17 +65,18 @@ export function createSurfacePresentTool(
           items: {
             type: "object",
             properties: {
-              id: { type: "string" },
+              id: { type: "string", description: "Stable id used to select or open this item in later tool calls." },
               title: { type: "string" },
               subtitle: { type: "string" },
               summary: { type: "string", description: "Short explanation for a card, list row, or glance view." },
-              badge: { type: "string" },
+              badge: { type: "string", description: "Short pill highlight on the card, e.g. 'Best fit', 'New', 'Urgent'. Keep it under ~15 characters." },
               content: { type: "string", description: "Full text used when the purpose is inspect or the item is opened." },
               imageUrl: { type: "string", description: "Optional HTTPS or data:image URL." },
               facts: {
                 type: "array",
                 maxItems: 8,
-                description: "Comparable attributes in display order, e.g. Price, Capacity, Distance.",
+                description:
+                  "Comparable attributes in display order, e.g. Price, Capacity, Distance. For compare, use identical labels on every item so values align as table columns; the first 6 distinct labels become columns.",
                 items: {
                   type: "object",
                   properties: {
@@ -291,7 +292,7 @@ export function wireTools(
                 title: { type: "string" },
                 subtitle: { type: "string" },
                 preview: { type: "string" },
-                badge: { type: "string" },
+                badge: { type: "string", description: "short pill highlight on the card, e.g. 'New'" },
                 content: { type: "string", description: "full text for the reader, optional" },
                 imageUrl: { type: "string", description: "optional image (HTTPS URL or data: URL) shown on the card and in the reader" },
               },

@@ -29,6 +29,8 @@ const CHECK =
 
 const icon = (kind?: string) => `<span class="ic">${ICONS[kind ?? "generic"] ?? ICONS.generic}</span>`;
 
+const kindLabel = (kind: string) => (kind === "generic" ? "" : `<span>${esc(kind)}</span>`);
+
 function weekDays(anchor: string): string[] {
   const d = new Date(anchor + "T00:00:00");
   const day = (d.getDay() + 6) % 7;
@@ -147,7 +149,7 @@ function cardInner(item: CardItem, fallbackKind: string): string {
         .join("")}</dl>`
     : "";
   return `
-    <div class="k">${icon(kind)}<span>${esc(kind)}</span>${item.badge ? `<span class="badge">${esc(item.badge)}</span>` : ""}</div>
+    <div class="k">${icon(kind)}${kindLabel(kind)}${item.badge ? `<span class="badge">${esc(item.badge)}</span>` : ""}</div>
     ${imageUrl ? `<img class="thumb" src="${esc(imageUrl)}" alt="${esc(item.title)}" referrerpolicy="no-referrer" />` : ""}
     <h2>${esc(item.title)}</h2>
     ${item.subtitle ? `<div class="sub">${esc(item.subtitle)}</div>` : ""}
@@ -235,10 +237,14 @@ function listHTML(stack: Stack): string {
 }
 
 function summaryHTML(stack: Stack): string {
+  const shown = stack.purpose === "glance" ? stack.items.slice(0, 6) : stack.items;
+  const note =
+    shown.length < stack.items.length
+      ? `showing ${shown.length} of ${stack.items.length}`
+      : `${stack.items.length} concise ${stack.items.length === 1 ? "summary" : "summaries"}`;
   return `<section class="present summary-view">
-    ${presentationHead(stack, `${stack.items.length} concise ${stack.items.length === 1 ? "summary" : "summaries"}`)}
-    <div class="summary-grid">${stack.items
-      .slice(0, 6)
+    ${presentationHead(stack, note)}
+    <div class="summary-grid">${shown
       .map(
         (item, index) => `<article class="summary-card glass${index === stack.focusIndex ? " focus" : ""}" data-motion-index="${index}">${cardInner(
           item,
@@ -274,7 +280,7 @@ function readerHTML(stack: Stack): string {
   const kind = item.kind ?? stack.kind;
   const imageUrl = safeImageUrl(item.imageUrl);
   return `<section class="reader glass">
-      <div class="k">${icon(kind)}<span>${esc(kind)}</span>${item.badge ? `<span class="badge">${esc(item.badge)}</span>` : ""}</div>
+      <div class="k">${icon(kind)}${kindLabel(kind)}${item.badge ? `<span class="badge">${esc(item.badge)}</span>` : ""}</div>
       <h1>${esc(item.title)}</h1>
       ${item.subtitle ? `<div class="sub">${esc(item.subtitle)}</div>` : ""}
       ${imageUrl ? `<img class="rimg" src="${esc(imageUrl)}" alt="${esc(item.title)}" referrerpolicy="no-referrer" />` : ""}

@@ -278,7 +278,9 @@ export class Store {
     } else if (s.view === "stack" || s.view === "reader") {
       const stack = this.activeStack();
       if (!stack || !stack.items.length) return false;
-      const focusIndex = Math.min(Math.max(stack.focusIndex + dir, 0), stack.items.length - 1);
+      // glance renders at most 6 cards, so focus must not wander past what is visible
+      const maxIndex = (stack.purpose === "glance" ? Math.min(stack.items.length, 6) : stack.items.length) - 1;
+      const focusIndex = Math.min(Math.max(stack.focusIndex + dir, 0), maxIndex);
       if (focusIndex === stack.focusIndex) return false;
       const stacks = s.stacks.map((st) => (st.id === stack.id ? { ...st, focusIndex } : st));
       this.state = { ...s, stacks };

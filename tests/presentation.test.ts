@@ -168,4 +168,35 @@ describe("intent-based presentation contract", () => {
       item: { id: "urgent", title: "Client reply", selected: false },
     });
   });
+
+  test("glance focus cannot swipe past the six rendered cards", async () => {
+    const store = new Store();
+    const context = new FakeContext();
+    wireTools(store, new WebMCPAdapter(context), () => "desktop");
+
+    await context.tools.get("surface_present").execute({
+      title: "Morning brief",
+      purpose: "glance",
+      items: Array.from({ length: 8 }, (_, i) => ({ id: String(i + 1), title: `Fact ${i + 1}` })),
+    });
+    for (let i = 0; i < 10; i++) store.swipe(1);
+    expect(store.activeStack()?.focusIndex).toBe(5);
+
+    await context.tools.get("surface_present").execute({
+      id: "all",
+      title: "Inbox",
+      purpose: "browse",
+      items: Array.from({ length: 8 }, (_, i) => ({ id: String(i + 1), title: `Mail ${i + 1}` })),
+    });
+    for (let i = 0; i < 10; i++) store.swipe(1);
+    expect(store.activeStack()?.focusIndex).toBe(7);
+  });
+
+  test("item schema teaches badge and comparable fact labels in-band", () => {
+    const schema: any = createSurfacePresentTool(new Store(), () => "desktop").inputSchema;
+    const item = schema.properties.items.items.properties;
+    expect(item.badge.description).toContain("pill");
+    expect(item.facts.description).toContain("identical labels");
+    expect(item.id.description).toContain("select");
+  });
 });

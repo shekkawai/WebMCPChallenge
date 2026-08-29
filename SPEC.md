@@ -58,7 +58,7 @@ Every item has a `title` and may carry `subtitle`, `summary`, `content`, `imageU
 }
 ```
 
-Facts are semantic values, not CSS or HTML. Hosts remain responsible for escaping content, validating media URLs, applying privacy limits, and choosing accessible components.
+Facts are semantic values, not CSS or HTML. For `compare`, agents should use identical fact labels on every item so values align as columns; a host unions the labels it receives and renders a placeholder for missing values. Hosts remain responsible for escaping content, validating media URLs, applying privacy limits, and choosing accessible components.
 
 ## Context adaptation
 
