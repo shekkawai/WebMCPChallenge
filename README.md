@@ -74,9 +74,14 @@ a monocular AR display — driven by voice (through the agent) and a ring, with
 no keyboard in reach. This is a real **glasses breakpoint**, not a scaled-down
 screen: the app is given a genuine near-square viewport carved into the lens,
 so the layout reflows (compact chip, tighter cards, denser calendar) and text
-stays readable — the same way a phone breakpoint reflows a desktop page. JS
-re-pins the box as the window resizes so it always stays on the glass (`LENS`
-in `src/views/glasses.ts` holds the lens coordinates if the photo changes).
+stays readable — the same way a phone breakpoint reflows a desktop page. The
+frame is the subject, not the photo: JS scales the shot so the whole glasses
+frame fits the window height and pins the lens centre to the screen centre, so
+the photo bleeds off the sides (mostly the left) rather than the frame being
+cropped — a wider window shows more frame, never less. Beyond about 16:9 the
+photo stops short of the edges and fades into an out-of-focus peripheral fill
+(`LENS`, `FRAME_SPAN` and `FILL_*` in `src/views/glasses.ts` hold the tuning if
+the photo changes; `tests/glasses.test.ts` pins the geometry).
 The page's capabilities don't change between contexts; only the input
 channels and the layout do.
 

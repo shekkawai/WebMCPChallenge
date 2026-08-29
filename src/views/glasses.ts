@@ -13,6 +13,41 @@ const STORAGE_KEY = "webmcp-surface-glasses";
 const IMAGE_ASPECT = 1920 / 1334;
 const LENS = { cx: 0.523, cy: 0.54, width: 0.44, aspect: 1.18 };
 
+// The glasses frame is the subject, not the photo. FRAME_SPAN is how much of
+// the image's height the frame occupies; the photo is scaled so the frame
+// fills between FILL_MIN and FILL_MAX of the viewport height, and the lens
+// centre is pinned to the viewport centre. On a wide screen the photo bleeds
+// off the sides (mostly the left, where the second lens is) instead of the
+// frame being cropped — so a wider window shows MORE frame, not less.
+const FRAME_SPAN = 0.75;
+const FILL_MIN = 0.94;
+const FILL_MAX = 1.0;
+// Keeping the lens centred means the photo must overhang by these factors to
+// leave no gap: 1 / max(cx, 1 - cx) horizontally, 1 / max(cy, 1 - cy) down.
+const COVER_W = 1.05;
+const COVER_H = 1.09;
+
+// Pure geometry so it can be tested without a DOM: given a viewport, where
+// does the photo go and how big is the lens display box carved into it.
+export function glassesGeometry(vw: number, vh: number) {
+  const cover = Math.max(COVER_H * vh, (COVER_W * vw) / IMAGE_ASPECT);
+  const dispH = Math.min(Math.max(cover, (vh * FILL_MIN) / FRAME_SPAN), (vh * FILL_MAX) / FRAME_SPAN);
+  const dispW = dispH * IMAGE_ASPECT;
+  const boxW = LENS.width * dispW;
+  const boxH = boxW / LENS.aspect;
+  return {
+    dispW,
+    dispH,
+    photoLeft: vw / 2 - LENS.cx * dispW,
+    photoTop: vh / 2 - LENS.cy * dispH,
+    boxLeft: vw / 2 - boxW / 2,
+    boxTop: vh / 2 - boxH / 2,
+    boxW,
+    boxH,
+    frameHeight: FRAME_SPAN * dispH,
+  };
+}
+
 function feed(line: string) {
   document.dispatchEvent(new CustomEvent<string>("agent-feed", { detail: line }));
 }
@@ -20,6 +55,7 @@ function feed(line: string) {
 export class GlassesMode {
   private button: HTMLButtonElement;
   private backdrop: HTMLElement;
+  private photo!: HTMLImageElement;
   private chrome: HTMLElement;
   private app: HTMLElement;
   private enabled = false;
@@ -74,27 +110,25 @@ export class GlassesMode {
     if (!silent) feed(this.enabled ? "glasses · monocular simulation on" : "glasses · simulation off");
   }
 
-  // The photo covers the viewport (object-fit: cover). Recompute where the
-  // lens landed on screen and give the app a real box of that size — resize,
-  // not scale, so the UI reflows to the lens shape and text stays readable.
+  // Scale the photo so the frame fills the viewport height (never cropped),
+  // pin the lens centre to the viewport centre, and grow the photo beyond
+  // that only as far as it takes to cover a wide window. The app gets a real
+  // box of the lens's size — resize, not scale, so the UI reflows to it.
   private reposition() {
     if (!this.enabled) return;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const dispH = Math.max(vh, vw / IMAGE_ASPECT);
-    const dispW = dispH * IMAGE_ASPECT;
-    const offsetX = (vw - dispW) / 2;
-    const offsetY = (vh - dispH) / 2;
-    const cx = offsetX + LENS.cx * dispW;
-    const cy = offsetY + LENS.cy * dispH;
-    const w = LENS.width * dispW;
-    const h = w / LENS.aspect;
+    const g = glassesGeometry(window.innerWidth, window.innerHeight);
+    Object.assign(this.photo.style, {
+      left: `${g.photoLeft.toFixed(1)}px`,
+      top: `${g.photoTop.toFixed(1)}px`,
+      width: `${g.dispW.toFixed(1)}px`,
+      height: `${g.dispH.toFixed(1)}px`,
+    });
     Object.assign(this.app.style, {
       position: "fixed",
-      left: `${(cx - w / 2).toFixed(1)}px`,
-      top: `${(cy - h / 2).toFixed(1)}px`,
-      width: `${w.toFixed(1)}px`,
-      height: `${h.toFixed(1)}px`,
+      left: `${g.boxLeft.toFixed(1)}px`,
+      top: `${g.boxTop.toFixed(1)}px`,
+      width: `${g.boxW.toFixed(1)}px`,
+      height: `${g.boxH.toFixed(1)}px`,
     });
   }
 
@@ -103,8 +137,11 @@ export class GlassesMode {
     el.id = "glasses-backdrop";
     el.hidden = true;
     el.setAttribute("aria-hidden", "true");
-    el.innerHTML = `<img src="/glasses-pov.jpg" alt="" draggable="false" />`;
+    el.innerHTML = `
+      <img class="ambient" src="/glasses-pov.jpg" alt="" draggable="false" />
+      <img class="pov" src="/glasses-pov.jpg" alt="" draggable="false" />`;
     document.body.appendChild(el);
+    this.photo = el.querySelector<HTMLImageElement>(".pov")!;
     return el;
   }
 
