@@ -10,6 +10,8 @@ Mail and Calendar get tailored views; everything else flows through one universa
 
 Entry for the [OpenAI WebMCP Challenge](https://openai.com/webmcp-challenge/).
 
+**Live demo:** <https://webmcp-challenge.shekkawai.workers.dev>
+
 ## Screens
 
 | Mail deck | Single email (reader) |
@@ -54,8 +56,11 @@ bun run test
 bun run dev
 # open http://localhost:5173/?demo=mail
 # (also: drive | calendar | month | reader | slots | options | chosen | people | done | photo)
-# ← → keys mirror the palm swipe; window.__surface exposes store + adapter
+# Click Camera to enable palm swipes; ← → remains the no-camera fallback
+# window.__surface exposes the store, WebMCP adapter, and gesture controller
 ```
+
+Deploy the production build to Cloudflare Workers with `bun run deploy`.
 
 ## Status
 
@@ -64,7 +69,8 @@ bun run dev
 - [x] Reader mode (single email / doc full-screen), dock, deixis via `surface_get_view_state`
 - [x] Glass UI (direction C: card deck, Apple-glass polish)
 - [x] Event-planning flow: slot proposals → confirm-to-event, rendered invitation-card options, recipients grid, sent confirmation
-- [ ] Camera palm-swipe (port from [dsh-jarvis-hud](https://github.com/shekkawai/dsh-jarvis-hud), MIT)
+- [x] Camera palm-swipe, local MediaPipe model, explicit camera control, and landmark-level tests (ported from [dsh-jarvis-hud](https://github.com/shekkawai/dsh-jarvis-hud), MIT)
+- [x] Cloudflare Workers deployment with all camera assets verified over HTTPS
 - [ ] Verify tool calls end-to-end in ChatGPT desktop in-app browser
 - [ ] Demo video
 

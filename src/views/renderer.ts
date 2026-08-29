@@ -249,11 +249,18 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
       <span class="listen">Listening</span>
       <span class="sep">·</span>
       <span class="mcp">${mcpAvailable ? "WebMCP ✓" : "keys ← →"}</span>
+      <span class="sep">·</span>
+      <button id="camera-toggle" type="button">Camera</button>
     </div>
     <main id="stage"></main>
     <nav id="dock" class="glass"></nav>
     <div id="hint">◀ swipe ▶ · speak to act</div>
-    <ul id="feed"></ul>`;
+    <ul id="feed"></ul>
+    <aside id="camera-panel" class="glass" hidden>
+      <video id="camera-video" autoplay muted playsinline></video>
+      <span id="camera-status" data-state="off">camera off</span>
+    </aside>
+    <div id="swipe-pulse" aria-hidden="true"></div>`;
 
   const stage = root.querySelector<HTMLElement>("#stage")!;
   const dock = root.querySelector<HTMLElement>("#dock")!;
