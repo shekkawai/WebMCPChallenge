@@ -71,6 +71,26 @@ needs a live `agent-browser` pass too.**
 - `public/mediapipe/` is ~40 MB of vendored WASM + hand-landmarker model (no CDN egress).
   It is deliberate; obligations are recorded in `THIRD-PARTY-NOTICES.md`.
 
+## The live map (location shape)
+
+- Items with `lat`/`lng` in `surface_present` render as map pins (`layout: "map"`,
+  `renderedAs: map-pins` / `map-lens`). The agent never asks for a map — it sends
+  location-shaped data. Tiles are **standard OSM** darkened by a CSS filter on the tile
+  pane only; CARTO's dark basemap now watermarks "API KEY REQUIRED", do not go back to it.
+  Routing is FOSSGIS OSRM (`routed-foot`), keyless; `walkingRoute()` degrades to a dashed
+  straight line on any failure so a demo can never stall on the routing service.
+- Leaflet is a **lazy chunk** (`import("./mapview")`) — keep it out of the base bundle.
+  The Leaflet instance lives on a persistent module-owned div re-appended each render.
+- Two traps, both cost a cycle: **motion finalizes transitions by rewriting
+  `stage.innerHTML`**, which silently drops any node appended mid-transition — imperative
+  mounts must wait for the `stage-settled` event motion now dispatches after every DOM
+  commit. And **`invalidateSize()` cancels an in-flight `flyTo`** — only call it when the
+  container size actually changed, and wrap route fits in `safeFlyToBounds` (deferred one
+  frame, instant-fit fallback) because flying mid-transition can throw NaN LatLng.
+- The user's position is told, not tracked (`map_set_location`); `map_show_route` returns
+  only distance/minutes/streets through the tool channel — geometry stays page-side, and
+  `getViewState` must never include route points.
+
 ## Deploying
 
 `bun run deploy` — note the script runs `env -u CLOUDFLARE_API_TOKEN wrangler deploy`.
