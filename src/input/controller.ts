@@ -127,6 +127,7 @@ export class ControllerInput {
   private learningIndex = -1;
   private captureReadyAt = 0;
   private wheel = new WheelInputDetector();
+  private setupBackup: { enabled: boolean; bindings: ControllerBindings } | null = null;
 
   constructor(store: Store) {
     this.store = store;
@@ -191,18 +192,31 @@ export class ControllerInput {
   }
 
   private closePanel() {
-    this.learningIndex = -1;
+    this.cancelSetup();
     this.panel.hidden = true;
     this.render();
   }
 
   private beginSetup() {
+    this.setupBackup = { enabled: this.enabled, bindings: { ...this.bindings } };
     this.bindings = {};
     this.enabled = false;
     this.learningIndex = 0;
     this.captureReadyAt = performance.now() + 250;
     this.wheel.reset();
     this.render();
+  }
+
+  // Abandoning setup must not destroy a working configuration: restore
+  // whatever was learned before "Relearn controls" was pressed.
+  private cancelSetup() {
+    if (this.learningIndex < 0) return;
+    this.learningIndex = -1;
+    if (this.setupBackup) {
+      this.bindings = { ...this.setupBackup.bindings };
+      this.enabled = this.setupBackup.enabled && this.configured;
+      this.setupBackup = null;
+    }
   }
 
   private reset() {
@@ -235,6 +249,7 @@ export class ControllerInput {
     this.wheel.reset();
     if (this.learningIndex >= ACTIONS.length) {
       this.learningIndex = -1;
+      this.setupBackup = null;
       this.enabled = true;
       this.save();
       this.feed("controller · setup complete · Ring Mode on");
@@ -262,7 +277,7 @@ export class ControllerInput {
     if (this.learningIndex >= 0) {
       if (event.key === "Escape") {
         event.preventDefault();
-        this.learningIndex = -1;
+        this.cancelSetup();
         this.render();
         return;
       }
@@ -292,6 +307,10 @@ export class ControllerInput {
   private onPointerDown = (event: PointerEvent) => {
     const token = pointerInputToken(event.button);
     if (this.learningIndex >= 0) {
+      // A ring click anywhere is learnable, but clicking the panel's own
+      // controls is clearly intent to press them (e.g. Close to cancel).
+      const target = event.target as Element | null;
+      if (target?.closest?.("[data-controller-ui] button, [data-controller-ui] input, [data-controller-ui] label")) return;
       if (this.capture(token)) {
         event.preventDefault();
         event.stopImmediatePropagation();
@@ -318,6 +337,12 @@ export class ControllerInput {
       return;
     }
     if (!this.enabled) return;
+    // Reading beats navigating: wheel over an open document always scrolls it,
+    // even when a wheel direction is a learned ring binding.
+    if ((event.target as Element | null)?.closest?.(".reader")) {
+      this.wheel.reset();
+      return;
+    }
     const immediateAction = actionForToken(this.bindings, immediateToken);
     if (immediateAction) event.preventDefault();
     const token = this.wheel.push(event.deltaX, event.deltaY, performance.now());
