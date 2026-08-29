@@ -2,10 +2,147 @@ import type { Store } from "./state/store";
 import type { ToolDef, WebMCPAdapter } from "./webmcp/adapter";
 import { speak } from "./speech";
 import { safeCssColor, safeImageUrl } from "./utils";
+import {
+  decidePresentation,
+  normalizeDataKind,
+  normalizeInteraction,
+  normalizeLayoutHint,
+  normalizePurpose,
+  presentationContext,
+  presentationDescription,
+  renderReceipt,
+  resolveInteraction,
+  type PresentationContext,
+} from "./presentation";
 
 const takeArray = (value: unknown, max: number) => (Array.isArray(value) ? value.slice(0, max) : null);
 
-export function wireTools(store: Store, mcp: WebMCPAdapter) {
+const factValue = (value: unknown) => {
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+  return null;
+};
+
+export function createSurfacePresentTool(
+  store: Store,
+  getContext: () => PresentationContext = presentationContext,
+): ToolDef {
+  const contextAtRegistration = getContext();
+  return {
+    name: "surface_present",
+    description: presentationDescription(contextAtRegistration),
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Stable surface id. Reusing it updates the same surface. Default: presentation." },
+        title: { type: "string", description: "Short label for the surface and dock." },
+        purpose: {
+          type: "string",
+          enum: ["glance", "browse", "inspect", "compare", "choose", "triage"],
+          description:
+            "What the user needs to do: glance = key facts in seconds; browse = explore a collection; inspect = one item in depth; compare = weigh items by shared facts; choose = pick one option; triage = prioritize, keep, dismiss, or organize many items.",
+        },
+        dataKind: {
+          type: "string",
+          enum: ["collection", "document", "schedule", "timeline", "metrics", "media", "people", "hierarchy", "location", "entity"],
+          description: "Optional semantic hint about the data. Omit when uncertain; the page can infer from the items.",
+        },
+        interaction: {
+          type: "string",
+          enum: ["view", "navigate", "single-select", "multi-select", "edit", "confirm"],
+          description: "Optional interaction hint. The page applies a safe purpose default when omitted.",
+        },
+        hint: {
+          type: "object",
+          description: "Optional presentation preference. The page may override it for the current device or lens.",
+          properties: {
+            layout: { type: "string", enum: ["cards", "grid", "list", "table"] },
+          },
+        },
+        items: {
+          type: "array",
+          minItems: 1,
+          maxItems: 100,
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              title: { type: "string" },
+              subtitle: { type: "string" },
+              summary: { type: "string", description: "Short explanation for a card, list row, or glance view." },
+              badge: { type: "string" },
+              content: { type: "string", description: "Full text used when the purpose is inspect or the item is opened." },
+              imageUrl: { type: "string", description: "Optional HTTPS or data:image URL." },
+              facts: {
+                type: "array",
+                maxItems: 8,
+                description: "Comparable attributes in display order, e.g. Price, Capacity, Distance.",
+                items: {
+                  type: "object",
+                  properties: {
+                    label: { type: "string" },
+                    value: { type: ["string", "number", "boolean"] },
+                  },
+                  required: ["label", "value"],
+                },
+              },
+            },
+            required: ["title"],
+          },
+        },
+      },
+      required: ["title", "purpose", "items"],
+    },
+    execute: ({ id, title, purpose: requestedPurpose, dataKind, interaction, hint, items }: any) => {
+      const list = takeArray(items, 100);
+      if (!list || !list.length) return { error: "items must contain 1–100 entries" };
+      const purpose = normalizePurpose(requestedPurpose);
+      const context = getContext();
+      const layoutHint = normalizeLayoutHint(hint?.layout);
+      const decision = decidePresentation(purpose, context, layoutHint);
+      const requestedInteraction = normalizeInteraction(interaction);
+      const effectiveInteraction = resolveInteraction(purpose, requestedInteraction);
+      const surfaceId = typeof id === "string" && id.trim() ? id.trim().slice(0, 80) : "presentation";
+      const cards = list.map((item: any, index: number) => ({
+        id: typeof item?.id === "string" && item.id ? item.id : String(index + 1),
+        kind: "generic" as const,
+        title: String(item?.title ?? `Item ${index + 1}`),
+        subtitle: typeof item?.subtitle === "string" ? item.subtitle : undefined,
+        preview: typeof item?.summary === "string" ? item.summary : undefined,
+        badge: typeof item?.badge === "string" ? item.badge : undefined,
+        content: typeof item?.content === "string" ? item.content : undefined,
+        imageUrl: safeImageUrl(item?.imageUrl),
+        facts: takeArray(item?.facts, 8)
+          ?.map((fact: any) => ({
+            label: typeof fact?.label === "string" ? fact.label.slice(0, 80) : "",
+            value: factValue(fact?.value),
+          }))
+          .filter((fact) => fact.label && fact.value !== null)
+          .map((fact) => ({ label: fact.label, value: fact.value! })),
+      }));
+      store.showStack(surfaceId, String(title ?? "Presentation"), "generic", cards, decision.layout, {
+        purpose,
+        requestedPurpose: typeof requestedPurpose === "string" ? requestedPurpose : undefined,
+        dataKind: normalizeDataKind(dataKind),
+        interaction: effectiveInteraction,
+        hint: layoutHint,
+      });
+      if (purpose === "inspect") store.openItem(cards[0]?.id);
+      let showing = cards.length;
+      if (purpose === "inspect") showing = Math.min(cards.length, 1);
+      else if (purpose === "glance") showing = context === "glasses" ? Math.min(cards.length, 1) : Math.min(cards.length, 6);
+      else if (context === "glasses" && ["compare", "choose", "triage"].includes(purpose)) showing = Math.min(cards.length, 1);
+      return {
+        receipt: renderReceipt(surfaceId, purpose, requestedPurpose, context, { ...decision, interaction: effectiveInteraction }, showing, cards.length),
+      };
+    },
+  };
+}
+
+export function wireTools(
+  store: Store,
+  mcp: WebMCPAdapter,
+  getContext: () => PresentationContext = presentationContext,
+) {
   const base: ToolDef[] = [
     {
       name: "surface_show_calendar",
@@ -138,7 +275,7 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
     {
       name: "surface_show_items",
       description:
-        "Universal renderer: display ANY collection as swipeable cards — search results, tasks, news, notes, contacts, anything. Use this when no specialized tool (calendar/emails/files) fits. Give the surface an id (reusing an id updates that surface) and a title for the dock.",
+        "Legacy universal renderer: display any collection as swipeable cards. Prefer surface_present when the user's purpose (compare, choose, triage, inspect, browse, or glance) is known, because it adapts the UI to desktop or glasses.",
       inputSchema: {
         type: "object",
         properties: {
@@ -458,6 +595,39 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
     },
   };
 
+  const selectPresentedItemTool: ToolDef = {
+    name: "surface_select_item",
+    description:
+      "Select one item from the current purpose='choose' presentation by 1-based number, id, or exact title. Omit item to select what the user focused with a swipe. This changes only the page selection; external actions still require their own confirmation.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        item: { type: "string", description: "1-based number, item id, or exact title; omit for the focused item" },
+      },
+    },
+    execute: ({ item }: any) => {
+      const chosen = store.selectOption(item);
+      return chosen ? { selected: { id: chosen.id, title: chosen.title } } : { error: "no matching choice on screen" };
+    },
+  };
+
+  const triageItemTool: ToolDef = {
+    name: "surface_toggle_item",
+    description:
+      "Mark or unmark an item in the current purpose='triage' presentation by 1-based number, id, or exact title. Omit item to use what the user focused with a swipe. This changes only page-local review state.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        item: { type: "string", description: "1-based number, item id, or exact title; omit for the focused item" },
+        selected: { type: "boolean", description: "true to mark, false to unmark; omit to toggle" },
+      },
+    },
+    execute: ({ item, selected }: any) => {
+      const changed = store.toggleItem(item, typeof selected === "boolean" ? selected : undefined);
+      return changed ? { item: { id: changed.id, title: changed.title, selected: Boolean(changed.selected) } } : { error: "no matching triage item on screen" };
+    },
+  };
+
   const openTool: ToolDef = {
     name: "surface_open_item",
     description:
@@ -485,15 +655,18 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
     },
   };
 
+  let presentTool = createSurfacePresentTool(store, getContext);
   let lastSig = "";
-  store.subscribe((s) => {
+  const syncTools = (s: Store["state"]) => {
     const stack = store.activeStack();
     const stackOn = s.view === "stack" || s.view === "reader";
     const optionsOn = stackOn && stack?.kind === "option";
-    const sig = [s.view, s.proposals.length > 0, optionsOn].join("|");
+    const chooseOn = stackOn && stack?.purpose === "choose";
+    const triageOn = stackOn && stack?.purpose === "triage";
+    const sig = [s.view, s.proposals.length > 0, optionsOn, chooseOn, triageOn, getContext()].join("|");
     if (sig === lastSig) return;
     lastSig = sig;
-    const tools = [...base];
+    const tools = [presentTool, ...base];
     if (s.view === "calendar") {
       tools.push(...calendarTools);
       if (s.proposals.length) tools.push(confirmSlotTool);
@@ -501,7 +674,18 @@ export function wireTools(store: Store, mcp: WebMCPAdapter) {
       tools.push(openTool);
       if (s.view === "reader") tools.push(closeTool);
       if (optionsOn) tools.push(selectOptionTool);
+      if (chooseOn) tools.push(selectPresentedItemTool);
+      if (triageOn) tools.push(triageItemTool);
     }
     mcp.setTools(tools);
-  });
+  };
+  store.subscribe(syncTools);
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("surface-contextchange", () => {
+      presentTool = createSurfacePresentTool(store, getContext);
+      lastSig = "";
+      syncTools(store.state);
+    });
+  }
 }

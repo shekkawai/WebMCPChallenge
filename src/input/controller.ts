@@ -89,9 +89,10 @@ export function activateFocused(store: Store): LocalSelectResult {
   if (!stack || !stack.items.length) return "none";
   const item = stack.items[stack.focusIndex];
   if (!item) return "none";
-  if (item.kind === "option" || item.design) {
+  if (item.kind === "option" || item.design || stack.purpose === "choose") {
     return store.selectOption(item.id) ? "selected" : "none";
   }
+  if (stack.purpose === "triage") return store.toggleItem(item.id) ? "selected" : "none";
   if (state.view === "reader") {
     store.closeItem();
     return "closed";

@@ -91,6 +91,7 @@ export class GlassesMode {
   toggle(force?: boolean, silent = false) {
     this.enabled = force ?? !this.enabled;
     document.body.classList.toggle("glasses-on", this.enabled);
+    document.dispatchEvent(new CustomEvent("surface-contextchange", { detail: { context: this.enabled ? "glasses" : "desktop" } }));
     this.backdrop.hidden = !this.enabled;
     this.chrome.hidden = !this.enabled;
     this.button.textContent = this.enabled ? "Glasses on" : "Glasses";

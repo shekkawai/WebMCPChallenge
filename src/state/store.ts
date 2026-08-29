@@ -1,4 +1,5 @@
 import { localDateISO } from "../utils";
+import type { DataKind, PresentationInteraction, PresentationMeta, PresentationPurpose, StackLayout } from "../presentation";
 
 export type CardKind = "email" | "event" | "file" | "folder" | "doc" | "person" | "option" | "generic";
 
@@ -24,6 +25,7 @@ export interface CardItem {
   design?: InviteDesign;
   selected?: boolean;
   imageUrl?: string;
+  facts?: { label: string; value: string }[];
 }
 
 export interface Stack {
@@ -32,7 +34,11 @@ export interface Stack {
   kind: CardKind;
   items: CardItem[];
   focusIndex: number;
-  layout?: "deck" | "grid";
+  layout?: StackLayout;
+  purpose?: PresentationPurpose;
+  dataKind?: DataKind;
+  interaction?: PresentationInteraction;
+  requestedPurpose?: string;
 }
 
 export interface CalendarEvent {
@@ -153,10 +159,21 @@ export class Store {
 
   // Universal entry point: mail, drive files, or anything the agent wants shown
   // become one shape — a stack of cards. Same id upserts (keeps focus position).
-  showStack(id: string, title: string, kind: CardKind, items: CardItem[], layout?: "deck" | "grid") {
+  showStack(id: string, title: string, kind: CardKind, items: CardItem[], layout?: StackLayout, presentation?: PresentationMeta) {
     const existing = this.state.stacks.find((s) => s.id === id);
     const focusIndex = existing ? Math.min(existing.focusIndex, Math.max(items.length - 1, 0)) : 0;
-    const stack: Stack = { id, title, kind, items, focusIndex, layout: layout ?? existing?.layout ?? "deck" };
+    const stack: Stack = {
+      id,
+      title,
+      kind,
+      items,
+      focusIndex,
+      layout: layout ?? existing?.layout ?? "deck",
+      purpose: presentation?.purpose ?? existing?.purpose,
+      dataKind: presentation?.dataKind ?? existing?.dataKind,
+      interaction: presentation?.interaction ?? existing?.interaction,
+      requestedPurpose: presentation?.requestedPurpose ?? existing?.requestedPurpose,
+    };
     const stacks = existing
       ? this.state.stacks.map((s) => (s.id === id ? stack : s))
       : [...this.state.stacks, stack];
@@ -179,6 +196,30 @@ export class Store {
     if (!stack.items[idx]) return null;
     const items = stack.items.map((it, i) => ({ ...it, selected: i === idx }));
     const stacks = this.state.stacks.map((s) => (s.id === stack.id ? { ...s, items, focusIndex: idx } : s));
+    this.state = { ...this.state, stacks, view: "stack" };
+    this.emit();
+    return items[idx];
+  }
+
+  toggleItem(ref?: string | number, selected?: boolean): CardItem | null {
+    const stack = this.activeStack();
+    if (!stack || !stack.items.length) return null;
+    let idx = stack.focusIndex;
+    const asNum = typeof ref === "number" ? ref : ref && /^\d+$/.test(ref) ? Number(ref) : null;
+    if (asNum !== null) idx = asNum - 1;
+    else if (typeof ref === "string" && ref) {
+      const q = ref.toLowerCase();
+      const found = stack.items.findIndex((item) => item.id === ref || item.title.toLowerCase() === q);
+      if (found < 0) return null;
+      idx = found;
+    }
+    if (!stack.items[idx]) return null;
+    const items = stack.items.map((item, i) =>
+      i === idx ? { ...item, selected: selected ?? !item.selected } : item,
+    );
+    const stacks = this.state.stacks.map((entry) =>
+      entry.id === stack.id ? { ...entry, items, focusIndex: idx } : entry,
+    );
     this.state = { ...this.state, stacks, view: "stack" };
     this.emit();
     return items[idx];
@@ -267,7 +308,8 @@ export class Store {
             badge: item.badge,
             selected: Boolean(item.selected),
             hasContent: Boolean(item.content),
-            hasImage: Boolean(item.imageUrl ?? item.design?.imageUrl),
+              hasImage: Boolean(item.imageUrl ?? item.design?.imageUrl),
+              facts: item.facts,
             design: item.design
               ? {
                   template: item.design.template,
@@ -294,6 +336,9 @@ export class Store {
               id: stack.id,
               title: stack.title,
               layout: stack.layout ?? "deck",
+              purpose: stack.purpose,
+              dataKind: stack.dataKind,
+              interaction: stack.interaction,
               position: stack.items.length ? `${stack.focusIndex + 1} of ${stack.items.length}` : "0 of 0",
               focusedItem: describeItem(stack.items[stack.focusIndex]),
               selectedItem: describeItem(stack.items.find((it) => it.selected)),

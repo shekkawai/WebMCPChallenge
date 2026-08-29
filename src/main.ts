@@ -23,7 +23,7 @@ declare global {
 }
 window.__surface = { store, mcp, gesture, controller, glasses };
 
-// ?demo=mail|drive|calendar|month|reader seeds fake data so every view is
+// ?demo=mail|drive|calendar|month|reader|compare seeds fake data so every view is
 // testable without an agent attached.
 const demo = new URLSearchParams(location.search).get("demo");
 if (demo !== null) {
@@ -165,6 +165,54 @@ if (demo !== null) {
       "grid",
     );
 
+  const seedComparison = () =>
+    store.showStack(
+      "venues",
+      "Annual event venues",
+      "generic",
+      [
+        {
+          id: "harbour",
+          title: "Harbour Room",
+          subtitle: "Wan Chai · waterfront",
+          preview: "Best atmosphere and a clear Friday evening slot.",
+          badge: "Best fit",
+          facts: [
+            { label: "Friday", value: "Sep 18 · 19:00" },
+            { label: "Capacity", value: "120" },
+            { label: "Price", value: "HK$18,000" },
+            { label: "MTR", value: "4 min" },
+          ],
+        },
+        {
+          id: "hive",
+          title: "The Hive",
+          subtitle: "Wan Chai · rooftop",
+          preview: "Most flexible package and your logo is already in Drive.",
+          facts: [
+            { label: "Friday", value: "Sep 25 · 19:30" },
+            { label: "Capacity", value: "90" },
+            { label: "Price", value: "HK$14,500" },
+            { label: "MTR", value: "6 min" },
+          ],
+        },
+        {
+          id: "foundry",
+          title: "The Foundry",
+          subtitle: "Quarry Bay · studio",
+          preview: "Largest screen and strongest AV package.",
+          facts: [
+            { label: "Friday", value: "Oct 2 · 19:00" },
+            { label: "Capacity", value: "150" },
+            { label: "Price", value: "HK$21,000" },
+            { label: "MTR", value: "8 min" },
+          ],
+        },
+      ],
+      "comparison",
+      { purpose: "compare", dataKind: "location", interaction: "view" },
+    );
+
   if (demo === "drive") store.switchTo("drive");
   else if (demo === "calendar") store.switchTo("calendar");
   else if (demo === "month") {
@@ -210,6 +258,7 @@ if (demo !== null) {
     seedOptions();
     store.selectOption(1);
   } else if (demo === "people") seedPeople();
+  else if (demo === "compare") seedComparison();
   else if (demo === "done") store.showDone("Invitations sent", "12 people · Aurora card · via Gmail");
   else store.switchTo("mail");
 }

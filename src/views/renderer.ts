@@ -139,12 +139,19 @@ function cardInner(item: CardItem, fallbackKind: string): string {
   }
   const kind = item.kind ?? fallbackKind;
   const imageUrl = safeImageUrl(item.imageUrl);
+  const facts = item.facts?.length
+    ? `<dl class="card-facts">${item.facts
+        .slice(0, 6)
+        .map((fact) => `<div><dt>${esc(fact.label)}</dt><dd>${esc(fact.value)}</dd></div>`)
+        .join("")}</dl>`
+    : "";
   return `
     <div class="k">${icon(kind)}<span>${esc(kind)}</span>${item.badge ? `<span class="badge">${esc(item.badge)}</span>` : ""}</div>
     ${imageUrl ? `<img class="thumb" src="${esc(imageUrl)}" alt="${esc(item.title)}" referrerpolicy="no-referrer" />` : ""}
     <h2>${esc(item.title)}</h2>
     ${item.subtitle ? `<div class="sub">${esc(item.subtitle)}</div>` : ""}
-    ${item.preview ? `<p class="prevw">${esc(item.preview)}</p>` : ""}`;
+    ${item.preview ? `<p class="prevw">${esc(item.preview)}</p>` : ""}
+    ${facts}`;
 }
 
 function deckHTML(stack: Stack): string {
@@ -185,6 +192,63 @@ function gridHTML(stack: Stack): string {
           .join("")}
       </div>
     </div>`;
+}
+
+function presentationHead(stack: Stack, note: string): string {
+  return `<div class="present-head"><div><span class="purpose">${esc(stack.purpose ?? "browse")}</span><h1>${esc(stack.title)}</h1></div><span class="present-note">${esc(note)}</span></div>`;
+}
+
+function comparisonHTML(stack: Stack): string {
+  const labels = [...new Set(stack.items.flatMap((item) => item.facts?.map((fact) => fact.label) ?? []))].slice(0, 6);
+  const valueFor = (item: CardItem, label: string) => item.facts?.find((fact) => fact.label === label)?.value ?? "—";
+  const table = `<div class="compare-table glass"><table><thead><tr><th>Option</th>${labels
+    .map((label) => `<th>${esc(label)}</th>`)
+    .join("")}</tr></thead><tbody>${stack.items
+    .map(
+      (item, index) => `<tr class="${index === stack.focusIndex ? "focus" : ""}"><th><b>${esc(item.title)}</b>${
+        item.subtitle ? `<span>${esc(item.subtitle)}</span>` : ""
+      }</th>${labels.map((label) => `<td>${esc(valueFor(item, label))}</td>`).join("")}</tr>`,
+    )
+    .join("")}</tbody></table></div>`;
+  return `<section class="present comparison">
+    ${presentationHead(stack, `${stack.items.length} options · same data, context-fit UI`)}
+    ${table}
+    <div class="compare-cards">${deckHTML(stack)}</div>
+  </section>`;
+}
+
+function listHTML(stack: Stack): string {
+  return `<section class="present present-list">
+    ${presentationHead(stack, `${stack.items.length} items · swipe to move focus`)}
+    <div class="list-rows">${stack.items
+      .map(
+        (item, index) => `<article class="list-row glass${index === stack.focusIndex ? " focus" : ""}${item.selected ? " selected" : ""}">
+          <span class="list-index">${String(index + 1).padStart(2, "0")}</span>
+          <div class="list-copy"><h2>${esc(item.title)}</h2>${item.subtitle ? `<span>${esc(item.subtitle)}</span>` : ""}${
+            item.preview ? `<p>${esc(item.preview)}</p>` : ""
+          }</div>
+          ${item.selected ? `<span class="triage-state">${CHECK} marked</span>` : item.badge ? `<span class="badge">${esc(item.badge)}</span>` : ""}
+        </article>`,
+      )
+      .join("")}</div>
+    <div class="counter">${stack.focusIndex + 1} of ${stack.items.length}</div>
+  </section>`;
+}
+
+function summaryHTML(stack: Stack): string {
+  return `<section class="present summary-view">
+    ${presentationHead(stack, `${stack.items.length} concise ${stack.items.length === 1 ? "summary" : "summaries"}`)}
+    <div class="summary-grid">${stack.items
+      .slice(0, 6)
+      .map(
+        (item, index) => `<article class="summary-card glass${index === stack.focusIndex ? " focus" : ""}">${cardInner(
+          item,
+          stack.kind,
+        )}</article>`,
+      )
+      .join("")}</div>
+    <div class="counter">${stack.focusIndex + 1} of ${stack.items.length}</div>
+  </section>`;
 }
 
 function doneHTML(s: State): string {
@@ -329,7 +393,13 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
     const stack = store.activeStack();
     if (s.view === "done") stage.innerHTML = doneHTML(s);
     else if (s.view === "calendar") stage.innerHTML = s.calendarView === "week" ? weekHTML(s) : monthHTML(s);
-    else if (s.view === "stack" && stack) stage.innerHTML = stack.layout === "grid" ? gridHTML(stack) : deckHTML(stack);
+    else if (s.view === "stack" && stack) {
+      if (stack.layout === "grid") stage.innerHTML = gridHTML(stack);
+      else if (stack.layout === "comparison") stage.innerHTML = comparisonHTML(stack);
+      else if (stack.layout === "list") stage.innerHTML = listHTML(stack);
+      else if (stack.layout === "summary") stage.innerHTML = summaryHTML(stack);
+      else stage.innerHTML = deckHTML(stack);
+    }
     else if (s.view === "reader" && stack) stage.innerHTML = readerHTML(stack);
     else
       stage.innerHTML = `<div class="hello glass">

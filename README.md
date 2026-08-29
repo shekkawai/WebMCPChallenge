@@ -6,7 +6,9 @@
 - **A palm swipe carries navigation** — next email, next file, next week. Handled entirely on-page (camera → MediaPipe → swipe), because navigation can't wait for a round trip.
 - **The swipe sets context the agent reads back** — `surface_get_view_state` tells the agent which card or week you are looking at, so "move *this* to Thursday" just works. Pointing with the whole screen.
 
-Mail and Calendar get tailored views; everything else flows through one universal card system (`surface_show_items`) — the surface is an output device for agents the way a monitor is for programs.
+Mail and Calendar get tailored views; everything else can flow through `surface_present`, an intent-based renderer. The agent says whether the user needs to glance, browse, inspect, compare, choose, or triage. The page chooses the component for the current context. The same comparison becomes a table on desktop and swipeable cards inside the glasses lens, without resending data.
+
+This pattern is documented as an experimental standard proposal in [SPEC.md](SPEC.md): **the agent decides what and why; the context decides how.**
 
 Entry for the [OpenAI WebMCP Challenge](https://openai.com/webmcp-challenge/).
 
@@ -22,6 +24,10 @@ Entry for the [OpenAI WebMCP Challenge](https://openai.com/webmcp-challenge/).
 | --- | --- | --- |
 | ![Week](shots/calendar.png) | ![Month](shots/month.png) | ![Drive](shots/drive.png) |
 
+| Same `compare` data on desktop | Same state in Glasses mode |
+| --- | --- |
+| ![Desktop comparison table](shots/compare.png) | ![Glasses comparison cards](shots/compare-glasses.png) |
+
 ## Why WebMCP
 
 The agent's connectors know your data; the page knows your body and your focus. WebMCP is the only channel where those two meet: the page hands the agent a live, structured view of what a human is physically attending to — and tools appear/disappear (`toolchange`) as views change: the reader's `surface_close_item` only exists while the reader is open.
@@ -34,6 +40,9 @@ The agent's connectors know your data; the page knows your body and your focus. 
 | `surface_show_emails` | agent → page | Render fetched emails as swipeable cards (pass `body` for full text) |
 | `surface_show_files` | agent → page | Render a Drive folder listing as cards |
 | `surface_show_items` | agent → page | **Universal**: render ANY collection as cards |
+| `surface_present` | agent → page | **Smart Responsive**: render semantic data by purpose, adapting desktop ↔ glasses and returning a render receipt |
+| `surface_select_item` | agent → page | Select from a `purpose: "choose"` presentation; dynamically registered only while choices are shown |
+| `surface_toggle_item` | agent → page | Mark/unmark items in a `purpose: "triage"` presentation; dynamically registered only during triage |
 | `surface_switch` | agent → page | Bring a rendered surface to the front |
 | `surface_open_item` | agent → page | Expand the focused card full-screen — *only while a deck is shown* |
 | `surface_close_item` | agent → page | Close the reader — *only while the reader is open* |
@@ -55,7 +64,7 @@ bun install
 bun run test
 bun run dev
 # open http://localhost:5173/?demo=mail
-# (also: drive | calendar | month | reader | slots | options | chosen | people | done | photo)
+# (also: drive | calendar | month | reader | compare | slots | options | chosen | people | done | photo)
 # Click Camera to enable palm swipes; ← → remains the no-camera fallback
 # Click Controller to teach a BLE ring/clicker its Previous, Next, and Select buttons
 # Click Glasses (or press G, or add &glasses=1) for the smart-glasses
@@ -128,6 +137,7 @@ Every pull request is automatically tested and built. Every push to `main` that 
 - [x] Universal stack/card model; Mail, Drive, and generic surfaces; calendar week + month
 - [x] Reader mode (single email / doc full-screen), dock, deixis via `surface_get_view_state`
 - [x] Glass UI (direction C: card deck, Apple-glass polish)
+- [x] Intent-based `surface_present` contract with six purposes, adaptive comparison/list/summary renderers, receipts, safe degradation, and [SPEC.md](SPEC.md)
 - [x] Event-planning flow: slot proposals → confirm-to-event, rendered invitation-card options, recipients grid, sent confirmation
 - [x] Camera palm-swipe, local MediaPipe model, explicit camera control, and landmark-level tests (ported from [dsh-jarvis-hud](https://github.com/shekkawai/dsh-jarvis-hud), MIT)
 - [x] Live hand-skeleton overlay on the camera preview, per-state status line, and on-screen gesture hints
