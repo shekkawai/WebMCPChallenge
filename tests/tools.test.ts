@@ -82,7 +82,7 @@ describe("surface tool flow", () => {
 
     store.closeItem();
     store.swipe(-1);
-    const state = context.tools.get("surface_get_view_state").execute({});
+    const state = await context.tools.get("surface_get_view_state").execute({});
     expect(state.stack.position).toBe("2 of 3");
     expect(state.stack.focusedItem.id).toBe(second.id);
     expect(state.stack.focusedItem.title).toBe("Sunset v2");
