@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mock B — Calm Broadsheet</title>
+<style>
+  :root { --ink: #1b1814; --paper: #f5f1e8; --accent: #d9481c; --soft: #8a8478; }
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    width: 1280px; height: 720px; overflow: hidden; position: relative;
+    background: var(--paper); color: var(--ink);
+    font-family: Georgia, "Times New Roman", serif;
+    padding: 44px 60px;
+  }
+  .top { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 3px solid var(--ink); padding-bottom: 18px; }
+  .masthead h1 { font-size: 84px; font-weight: 500; letter-spacing: -0.02em; line-height: 1; }
+  .masthead .sub { font-size: 17px; color: var(--soft); margin-top: 10px; }
+  .masthead .sub b { color: var(--accent); font-weight: 600; }
+  .status { text-align: right; font-size: 14px; color: var(--soft); line-height: 1.9; }
+  .status .dot { color: var(--accent); }
+  .cols { display: grid; grid-template-columns: 1.1fr 1fr; gap: 56px; margin-top: 28px; }
+  h2 { font-size: 13px; font-family: system-ui, sans-serif; text-transform: uppercase; letter-spacing: .22em; color: var(--soft); margin-bottom: 18px; }
+  .sched .row { display: flex; gap: 22px; align-items: baseline; padding: 13px 0; border-bottom: 1px solid #ddd6c8; }
+  .sched .t { font-family: system-ui, sans-serif; font-size: 15px; color: var(--accent); min-width: 64px; font-weight: 600; }
+  .sched .what { font-size: 25px; }
+  .sched .row.now .what { font-weight: 700; }
+  .sched .row.now::after { content: "now"; font-family: system-ui, sans-serif; font-size: 11px; color: var(--paper); background: var(--accent); border-radius: 99px; padding: 3px 10px; margin-left: auto; align-self: center; }
+  .letters .sheet { background: #fffdf8; border: 1px solid #e3dccd; box-shadow: 0 2px 0 #e3dccd; padding: 18px 22px; margin-bottom: 14px; }
+  .letters .sheet.focus { border-left: 5px solid var(--accent); padding: 24px 26px; box-shadow: 0 10px 24px rgba(27,24,20,.09); }
+  .letters .from { font-family: system-ui, sans-serif; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--soft); margin-bottom: 6px; }
+  .letters .sheet.focus .from { color: var(--accent); }
+  .letters .subj { font-size: 27px; line-height: 1.15; }
+  .letters .sheet.focus .subj { font-size: 31px; }
+  .letters .prev { font-size: 15px; color: #5d574c; margin-top: 10px; line-height: 1.55; max-width: 44ch; }
+  .letters .dim .subj { font-size: 19px; color: #6e6759; }
+  .weekline { position: absolute; left: 60px; right: 60px; bottom: 44px; border-top: 1px solid #ccc4b2; padding-top: 16px; display: flex; justify-content: space-between; align-items: center; }
+  .wd { text-align: center; font-family: system-ui, sans-serif; font-size: 12px; color: var(--soft); width: 64px; }
+  .wd .n { display: block; font-family: Georgia, serif; font-size: 21px; color: var(--ink); margin-top: 3px; }
+  .wd .dots { height: 8px; margin-top: 5px; font-size: 9px; letter-spacing: 2px; color: var(--accent); }
+  .wd.today { background: var(--ink); color: var(--paper); border-radius: 8px; padding: 6px 0; }
+  .wd.today .n { color: var(--paper); }
+  .hint { font-family: system-ui, sans-serif; font-size: 12.5px; color: var(--soft); letter-spacing: .06em; }
+  .hint b { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="masthead">
+      <h1>Friday</h1>
+      <div class="sub">29 August 2026 · <b>今日簡報</b> · 3 letters, 4 appointments</div>
+    </div>
+    <div class="status">
+      <div><span class="dot">●</span> Listening</div>
+      <div>swipe ◀ ▶ to turn</div>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="sched">
+      <h2>Today</h2>
+      <div class="row"><span class="t">09:30</span><span class="what">OMP newsletter goes out</span></div>
+      <div class="row now"><span class="t">10:30</span><span class="what">AI Meetup rehearsal</span></div>
+      <div class="row"><span class="t">15:00</span><span class="what">Kelvin — tlive pricing call</span></div>
+      <div class="row"><span class="t">16:00</span><span class="what">tlive demo · conference hall B</span></div>
+    </div>
+
+    <div class="letters">
+      <h2>Letters · 1 of 3</h2>
+      <div class="sheet focus">
+        <div class="from">Kelvin Chan · 09:41</div>
+        <div class="subj">Re: tlive 報價</div>
+        <div class="prev">Thanks Shek — can you confirm the per-event price and audience cap by Friday?</div>
+      </div>
+      <div class="sheet dim">
+        <div class="from">AI Meetup HK</div>
+        <div class="subj">Speaker slot confirmed (Sept 12)</div>
+      </div>
+      <div class="sheet dim">
+        <div class="from">Publer</div>
+        <div class="subj">Your August receipt</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="weekline">
+    <span class="hint"><b>Say it</b> to act — "reply", "move this to Thursday"</span>
+    <div class="wd">Mon<span class="n">24</span><div class="dots">·</div></div>
+    <div class="wd">Tue<span class="n">25</span><div class="dots"></div></div>
+    <div class="wd">Wed<span class="n">26</span><div class="dots">··</div></div>
+    <div class="wd">Thu<span class="n">27</span><div class="dots">·</div></div>
+    <div class="wd today">Fri<span class="n">28</span><div class="dots"></div></div>
+    <div class="wd">Sat<span class="n">29</span><div class="dots">·</div></div>
+    <div class="wd">Sun<span class="n">30</span><div class="dots"></div></div>
+  </div>
+</body>
+</html>

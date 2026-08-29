@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mock A — JARVIS HUD</title>
+<style>
+  :root { --cyan: #52d7ff; --amber: #ffb454; }
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    width: 1280px; height: 720px; overflow: hidden; position: relative;
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    color: #cfe9f5;
+    background:
+      radial-gradient(ellipse at 28% 42%, rgba(82,215,255,.09), transparent 55%),
+      radial-gradient(ellipse at 82% 85%, rgba(255,180,84,.06), transparent 50%),
+      #04070d;
+  }
+  body::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(82,215,255,.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(82,215,255,.045) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+  .bar { display: flex; justify-content: space-between; align-items: center; padding: 20px 32px 0; font-size: 11px; letter-spacing: .28em; color: #7fb8cf; }
+  .bar .listening { color: var(--amber); }
+  .bar .listening::before { content: "●"; margin-right: 8px; }
+  .panel {
+    position: absolute; background: rgba(8,22,34,.62);
+    border: 1px solid rgba(82,215,255,.34); border-radius: 4px;
+    box-shadow: 0 0 26px rgba(82,215,255,.10), inset 0 0 34px rgba(82,215,255,.04);
+  }
+  .panel .tab {
+    font-size: 10px; letter-spacing: .3em; color: var(--cyan);
+    border-bottom: 1px solid rgba(82,215,255,.22); padding: 10px 16px;
+  }
+  .mail-focus { left: 64px; top: 96px; width: 560px; height: 360px; z-index: 3; border-color: rgba(82,215,255,.65); }
+  .mail-focus .body { padding: 22px 24px; }
+  .mail-focus h2 { font-size: 26px; font-weight: 600; letter-spacing: .01em; color: #eaf7ff; margin-bottom: 8px; }
+  .mail-focus .from { color: var(--amber); font-size: 12px; letter-spacing: .18em; margin-bottom: 20px; }
+  .mail-focus p { font-size: 14px; line-height: 1.7; color: #9cc4d6; max-width: 46ch; }
+  .mail-focus .actions { position: absolute; bottom: 16px; left: 24px; font-size: 10px; letter-spacing: .24em; color: #5b8ba0; }
+  .mail-ghost { left: 96px; top: 480px; width: 250px; height: 120px; opacity: .55; }
+  .mail-ghost2 { left: 372px; top: 480px; width: 250px; height: 120px; opacity: .4; }
+  .mail-ghost .body, .mail-ghost2 .body { padding: 12px 14px; font-size: 12px; color: #8fb6c8; }
+  .mail-ghost .body b, .mail-ghost2 .body b { display: block; color: #c4e6f4; font-weight: 600; margin-bottom: 4px; font-size: 13px; }
+  .feed { right: 64px; top: 96px; width: 400px; height: 268px; }
+  .feed ul { list-style: none; padding: 14px 16px; font-size: 12px; line-height: 2.1; color: #6fa3b8; }
+  .feed .call { color: var(--cyan); }
+  .feed .tc { color: var(--amber); }
+  .week { right: 64px; top: 392px; width: 400px; height: 208px; }
+  .week .days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 12px; }
+  .week .d { font-size: 10px; text-align: center; color: #5b8ba0; letter-spacing: .1em; }
+  .week .d .n { display: block; font-size: 15px; color: #b9dcea; margin: 6px 0 8px; }
+  .week .d.today .n { color: var(--cyan); text-shadow: 0 0 12px rgba(82,215,255,.8); }
+  .week .ev { background: rgba(82,215,255,.12); border: 1px solid rgba(82,215,255,.3); border-radius: 3px; font-size: 8.5px; padding: 3px 2px; margin-top: 3px; color: #a5d6e8; }
+  .week .ev.hot { background: rgba(255,180,84,.14); border-color: rgba(255,180,84,.45); color: #ffd9a3; }
+  .swipe { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); font-size: 11px; letter-spacing: .5em; color: #4c7c92; }
+  .swipe b { color: var(--cyan); font-weight: 400; }
+  .ring {
+    position: absolute; top: 54px; right: 500px; width: 96px; height: 96px; border-radius: 50%; opacity: .65;
+    background: conic-gradient(var(--cyan) 0 40deg, transparent 40deg 70deg, var(--cyan) 70deg 90deg,
+      transparent 90deg 200deg, rgba(82,215,255,.45) 200deg 260deg, transparent 260deg 360deg);
+    -webkit-mask: radial-gradient(circle, transparent 55%, #000 57%);
+    mask: radial-gradient(circle, transparent 55%, #000 57%);
+  }
+  .corner { position: absolute; width: 26px; height: 26px; border: 1px solid rgba(82,215,255,.5); }
+  .c1 { top: 14px; left: 14px; border-right: 0; border-bottom: 0; }
+  .c2 { top: 14px; right: 14px; border-left: 0; border-bottom: 0; }
+  .c3 { bottom: 14px; left: 14px; border-right: 0; border-top: 0; }
+  .c4 { bottom: 14px; right: 14px; border-left: 0; border-top: 0; }
+</style>
+</head>
+<body>
+  <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+  <div class="bar">
+    <span>◤ BRIEFING SURFACE</span>
+    <span>FRI 29 AUG · 10:12</span>
+    <span class="listening">LISTENING · CAM ACTIVE</span>
+  </div>
+  <div class="ring"></div>
+
+  <div class="panel mail-focus">
+    <div class="tab">MAIL — CARD 1 / 3</div>
+    <div class="body">
+      <h2>Re: tlive 報價</h2>
+      <div class="from">KELVIN CHAN · 09:41</div>
+      <p>Thanks Shek — the demo went well with our events team. Can you confirm the per-event price and the audience cap by Friday? We would like to run it at the September conference.</p>
+      <div class="actions">SAY: "REPLY…" · "ARCHIVE" · "NEXT"</div>
+    </div>
+  </div>
+
+  <div class="panel mail-ghost">
+    <div class="body"><b>AI Meetup HK</b>Speaker slot confirmed (Sept 12)</div>
+  </div>
+  <div class="panel mail-ghost2">
+    <div class="body"><b>Publer</b>Your August receipt</div>
+  </div>
+
+  <div class="panel feed">
+    <div class="tab">AGENT FEED</div>
+    <ul>
+      <li class="call">→ briefing_show_emails(3)</li>
+      <li class="call">→ briefing_get_view_state()</li>
+      <li>← focused: "Re: tlive 報價"</li>
+      <li class="tc">▲ toolchange: mail tools registered</li>
+      <li class="call">→ briefing_speak("Three new letters…")</li>
+    </ul>
+  </div>
+
+  <div class="panel week">
+    <div class="tab">WEEK 36 · SEP 07 – 13</div>
+    <div class="days">
+      <div class="d">MON<span class="n">07</span><div class="ev">Newsletter</div></div>
+      <div class="d">TUE<span class="n">08</span></div>
+      <div class="d">WED<span class="n">09</span><div class="ev">Rehearsal</div></div>
+      <div class="d">THU<span class="n">10</span><div class="ev hot">15:00 Kelvin</div></div>
+      <div class="d today">FRI<span class="n">11</span><div class="ev">tlive demo</div></div>
+      <div class="d">SAT<span class="n">12</span><div class="ev hot">AI Meetup</div></div>
+      <div class="d">SUN<span class="n">13</span></div>
+    </div>
+  </div>
+
+  <div class="swipe">◀ &nbsp;PALM SWIPE&nbsp; ▶ &nbsp;·&nbsp; <b>SPEAK TO ACT</b></div>
+</body>
+</html>

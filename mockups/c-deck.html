@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mock C — Card Deck</title>
+<style>
+  :root { --mail: #f6b73c; --cal: #3ecfae; --ink: #17181d; }
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    width: 1280px; height: 720px; overflow: hidden; position: relative;
+    background: radial-gradient(ellipse at 50% 30%, #262a36, #101218 70%, #0a0b10);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #e8e9ee;
+  }
+  .floor { position: absolute; left: 50%; bottom: 118px; transform: translateX(-50%); width: 900px; height: 90px; background: radial-gradient(ellipse, rgba(0,0,0,.55), transparent 70%); }
+  .bar { display: flex; justify-content: space-between; padding: 22px 36px; font-size: 14px; color: #8b8fa0; }
+  .bar .listen { color: #ffd08a; }
+  .bar .listen::before { content: "● "; }
+  .stage { position: absolute; inset: 90px 0 200px; perspective: 1400px; }
+  .card {
+    position: absolute; top: 30px; left: 50%; width: 470px; height: 330px;
+    background: #fdfcf9; color: var(--ink); border-radius: 22px;
+    box-shadow: 0 30px 60px rgba(0,0,0,.5);
+    transform-style: preserve-3d;
+  }
+  .card .tag {
+    position: absolute; top: -14px; left: 28px; font-size: 12px; font-weight: 700;
+    letter-spacing: .16em; color: var(--ink); background: var(--mail);
+    padding: 6px 14px; border-radius: 99px;
+  }
+  .card .inner { padding: 40px 34px 0; }
+  .card h2 { font-size: 30px; font-weight: 750; letter-spacing: -0.01em; margin-bottom: 8px; }
+  .card .from { font-size: 14px; color: #9b6a00; font-weight: 650; margin-bottom: 18px; }
+  .card p { font-size: 16.5px; line-height: 1.6; color: #4d4c48; }
+  .card .foot { position: absolute; bottom: 20px; left: 34px; right: 34px; display: flex; justify-content: space-between; font-size: 13px; color: #a3a094; }
+  .card.focus { transform: translateX(-50%) rotate(-0.6deg); z-index: 5; }
+  .card.left { transform: translateX(-108%) rotate(-9deg) scale(.84); opacity: .5; filter: brightness(.75); z-index: 2; }
+  .card.right { transform: translateX(8%) rotate(9deg) scale(.84); opacity: .5; filter: brightness(.75); z-index: 2; }
+  .card.left .inner h2, .card.right .inner h2 { font-size: 24px; }
+  .arrow { position: absolute; top: 46%; font-size: 64px; color: rgba(255,255,255,.16); z-index: 6; }
+  .arrow.l { left: 40px; } .arrow.r { right: 40px; }
+  .counter { position: absolute; top: 470px; left: 50%; transform: translateX(-50%); font-size: 13px; letter-spacing: .3em; color: #6d7180; z-index: 6; }
+  .shelf { position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; align-items: flex-end; }
+  .mini {
+    width: 96px; height: 92px; background: #191c25; border: 1px solid #2b2f3d;
+    border-radius: 14px; padding: 10px 12px; font-size: 11px; color: #7d8294;
+  }
+  .mini .n { font-size: 19px; font-weight: 700; color: #cfd2dc; display: block; margin: 2px 0 6px; }
+  .mini .ev { background: rgba(62,207,174,.15); border: 1px solid rgba(62,207,174,.4); color: #8fe6d1; border-radius: 6px; padding: 3px 6px; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mini.today { height: 106px; background: #1f2330; border-color: var(--cal); box-shadow: 0 8px 24px rgba(62,207,174,.15); }
+  .mini.today .n { color: var(--cal); }
+  .dock { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 7; }
+  .pill { font-size: 13px; font-weight: 650; padding: 8px 22px; border-radius: 99px; color: #8b8fa0; background: rgba(255,255,255,.06); }
+  .pill.on { background: var(--mail); color: var(--ink); }
+  .hand { position: absolute; right: 150px; bottom: 190px; font-size: 42px; transform: rotate(-12deg); opacity: .85; z-index: 8; }
+  .hand small { display: block; font-size: 11px; color: #9ba0b2; letter-spacing: .1em; transform: rotate(12deg); margin-top: 6px; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <span><b style="color:#e8e9ee">Briefing</b> · Fri 29 Aug · 10:12</span>
+    <span class="listen">Listening</span>
+  </div>
+  <div class="floor"></div>
+
+  <div class="stage">
+    <div class="card left">
+      <div class="inner">
+        <h2>Speaker slot confirmed (Sept 12)</h2>
+        <div class="from">AI Meetup HK</div>
+      </div>
+    </div>
+    <div class="card right">
+      <div class="inner">
+        <h2>Your August receipt</h2>
+        <div class="from">Publer</div>
+      </div>
+    </div>
+    <div class="card focus">
+      <span class="tag">MAIL</span>
+      <div class="inner">
+        <h2>Re: tlive 報價</h2>
+        <div class="from">Kelvin Chan · 09:41</div>
+        <p>Thanks Shek — the demo went well with our events team. Can you confirm the per-event price and the audience cap by Friday?</p>
+      </div>
+      <div class="foot"><span>say "reply" · "archive"</span><span>attachment · 1</span></div>
+    </div>
+    <div class="arrow l">‹</div>
+    <div class="arrow r">›</div>
+    <div class="counter">1 / 3</div>
+  </div>
+
+  <div class="shelf">
+    <div class="mini">Mon<span class="n">24</span><div class="ev">Newsletter</div></div>
+    <div class="mini">Tue<span class="n">25</span></div>
+    <div class="mini">Wed<span class="n">26</span><div class="ev">Rehearsal</div></div>
+    <div class="mini">Thu<span class="n">27</span><div class="ev">15:00 Kelvin</div></div>
+    <div class="mini today">Fri<span class="n">28</span><div class="ev">tlive demo</div></div>
+    <div class="mini">Sat<span class="n">29</span><div class="ev">AI Meetup</div></div>
+    <div class="mini">Sun<span class="n">30</span></div>
+  </div>
+
+  <div class="hand">🖐<small>SWIPE</small></div>
+  <div class="dock">
+    <span class="pill on">Mail</span>
+    <span class="pill">Calendar</span>
+  </div>
+</body>
+</html>
