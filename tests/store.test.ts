@@ -70,4 +70,14 @@ describe("Store", () => {
     expect(store.switchTo("missing")).toBeFalse();
     expect(store.state.view).toBe("idle");
   });
+
+  test("boundary swipes do not emit a fake navigation state", () => {
+    const store = new Store();
+    store.showStack("one", "One", "generic", [{ id: "only", title: "Only item" }]);
+    let emissions = 0;
+    store.subscribe(() => emissions++);
+    expect(store.swipe(-1)).toBeFalse();
+    expect(store.swipe(1)).toBeFalse();
+    expect(emissions).toBe(1);
+  });
 });

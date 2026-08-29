@@ -1,4 +1,5 @@
 import type { Store } from "../state/store";
+import type { SurfaceMotion } from "../motion";
 import { isOpenPalm, type Point, type Point3 } from "./pose";
 import { drawHands, type OverlayHand } from "./overlay";
 
@@ -6,9 +7,14 @@ export class PalmSwipeDetector {
   private samples: { at: number; x: number }[] = [];
   private palm = false;
   private cooldownUntil = 0;
+  private motion = 0;
 
   get palmActive() {
     return this.palm;
+  }
+
+  get progress() {
+    return this.motion;
   }
 
   push(landmarks: Point[], at: number, world?: Point3[] | null): 1 | -1 | null {
@@ -16,6 +22,7 @@ export class PalmSwipeDetector {
     this.palm = palm;
     if (!palm) {
       this.samples = [];
+      this.motion = 0;
       return null;
     }
 
@@ -24,22 +31,28 @@ export class PalmSwipeDetector {
     const x = 1 - landmarks[0].x;
     this.samples.push({ at, x });
     this.samples = this.samples.filter((sample) => at - sample.at <= 280);
+    const first = this.samples[0];
+    const delta = x - first.x;
+    // Touch-carousel convention: content follows the palm, so a left sweep
+    // advances to the next item and a right sweep returns to the previous one.
+    const target = Math.max(-1, Math.min(1, -delta / 0.15));
+    this.motion = this.samples.length < 2 ? 0 : this.motion * 0.42 + target * 0.58;
     if (at < this.cooldownUntil || this.samples.length < 3) return null;
 
-    const first = this.samples[0];
     const elapsed = at - first.at;
-    const delta = x - first.x;
     if (elapsed < 80 || Math.abs(delta) < 0.15 || Math.abs(delta) / elapsed < 0.00055) return null;
 
     this.samples = [];
+    this.motion = delta > 0 ? -1 : 1;
     this.cooldownUntil = at + 560;
-    return delta > 0 ? 1 : -1;
+    return delta > 0 ? -1 : 1;
   }
 
   reset() {
     this.samples = [];
     this.palm = false;
     this.cooldownUntil = 0;
+    this.motion = 0;
   }
 }
 
@@ -53,6 +66,7 @@ type Landmarker = {
 
 export class CameraSwipeController {
   private store: Store;
+  private motion: SurfaceMotion;
   private button: HTMLButtonElement;
   private panel: HTMLElement;
   private video: HTMLVideoElement;
@@ -71,8 +85,9 @@ export class CameraSwipeController {
   private liveKey = "";
   private statusHoldUntil = 0;
 
-  constructor(store: Store) {
+  constructor(store: Store, motion: SurfaceMotion) {
     this.store = store;
+    this.motion = motion;
     this.button = document.querySelector<HTMLButtonElement>("#camera-toggle")!;
     this.panel = document.querySelector<HTMLElement>("#camera-panel")!;
     this.video = document.querySelector<HTMLVideoElement>("#camera-video")!;
@@ -164,6 +179,7 @@ export class CameraSwipeController {
     const seen = result.landmarks?.length ?? 0;
     const hands: OverlayHand[] = [];
     let fired = false;
+    let gestureProgress = 0;
     for (let i = 0; i < this.detectors.length; i++) {
       const landmarks = result.landmarks?.[i];
       if (!landmarks) {
@@ -180,10 +196,16 @@ export class CameraSwipeController {
       }
       const direction = this.detectors[i].push(landmarks, at, world);
       hands.push({ landmarks, palm: direction !== null || this.detectors[i].palmActive });
+      if (Math.abs(this.detectors[i].progress) > Math.abs(gestureProgress)) gestureProgress = this.detectors[i].progress;
       if (direction) {
+        this.motion.trackSwipe(direction);
         this.commit(direction, at);
         fired = true;
       }
+    }
+    if (!fired) {
+      if (hands.some((hand) => hand.palm)) this.motion.trackSwipe(gestureProgress);
+      else this.motion.settleSwipe();
     }
     this.renderOverlay(hands);
     this.updateLiveStatus(hands);
@@ -213,6 +235,7 @@ export class CameraSwipeController {
   ingestLandmarks(landmarks: Point[], at: number, world?: Point3[] | null) {
     if (at - this.lastSwipeAt < 560) return null;
     const direction = this.detectors[0].push(landmarks, at, world);
+    this.motion.trackSwipe(direction ?? this.detectors[0].progress);
     if (direction) this.commit(direction, at);
     return direction;
   }
@@ -220,7 +243,14 @@ export class CameraSwipeController {
   private commit(direction: 1 | -1, at: number) {
     this.lastSwipeAt = at;
     this.detectors.forEach((detector) => detector.reset());
-    this.store.swipe(direction);
+    const moved = this.store.swipe(direction);
+    this.motion.settleSwipe();
+    if (!moved) {
+      this.setStatus(direction > 0 ? "end of list" : "start of list", "ready");
+      this.statusHoldUntil = at + 700;
+      this.liveKey = "";
+      return;
+    }
     this.flash(direction);
     this.setStatus(direction > 0 ? "swipe ✓ next" : "swipe ✓ previous", "ready");
     this.statusHoldUntil = at + 900;
@@ -255,6 +285,7 @@ export class CameraSwipeController {
     this.landmarker = null;
     this.lastSwipeAt = Number.NEGATIVE_INFINITY;
     this.detectors.forEach((detector) => detector.reset());
+    this.motion.settleSwipe();
     this.liveKey = "";
     this.statusHoldUntil = 0;
     this.overlay.getContext("2d")?.clearRect(0, 0, this.overlay.width, this.overlay.height);
@@ -267,6 +298,6 @@ export class CameraSwipeController {
   }
 }
 
-export function attachCameraSwipe(store: Store) {
-  return new CameraSwipeController(store);
+export function attachCameraSwipe(store: Store, motion: SurfaceMotion) {
+  return new CameraSwipeController(store, motion);
 }

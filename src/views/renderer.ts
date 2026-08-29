@@ -1,5 +1,6 @@
 import type { CardItem, InviteDesign, Stack, State, Store } from "../state/store";
 import { localDateISO, safeCssColor, safeImageUrl } from "../utils";
+import { SurfaceMotion, cardRole } from "../motion";
 
 const esc = (s: string) =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -160,14 +161,12 @@ function deckHTML(stack: Stack): string {
   }
   const cards = stack.items
     .map((item, i) => {
-      const off = i - stack.focusIndex;
-      const cls =
-        off === 0 ? "focus" : off === -1 ? "prev" : off === 1 ? "next" : off < -1 ? "far-left" : "far-right";
-      return `<article class="card glass ${cls}${item.design ? " opt" : ""}${item.selected ? " sel" : ""}">${cardInner(item, stack.kind)}</article>`;
+      const cls = cardRole(i, stack.focusIndex);
+      return `<article class="card glass ${cls}${item.design ? " opt" : ""}${item.selected ? " sel" : ""}" data-motion-index="${i}">${cardInner(item, stack.kind)}</article>`;
     })
     .join("");
   return `<div class="deck">${cards}</div>
-    <div class="counter">${esc(stack.title)} · ${stack.focusIndex + 1} of ${stack.items.length}</div>`;
+    <div class="counter" data-motion-counter data-motion-title="1">${esc(stack.title)} · ${stack.focusIndex + 1} of ${stack.items.length}</div>`;
 }
 
 function gridHTML(stack: Stack): string {
@@ -183,7 +182,7 @@ function gridHTML(stack: Stack): string {
       <div class="pgrid">
         ${stack.items
           .map(
-            (it, i) => `<div class="pchip glass${i === stack.focusIndex ? " focus" : ""}">
+            (it, i) => `<div class="pchip glass${i === stack.focusIndex ? " focus" : ""}" data-motion-index="${i}">
               <span class="av">${esc(initials(it.title))}</span>
               <div class="pinfo"><b>${esc(it.title)}</b>${it.subtitle ? `<span>${esc(it.subtitle)}</span>` : ""}</div>
               ${it.badge ? `<span class="badge">${esc(it.badge)}</span>` : ""}
@@ -205,7 +204,7 @@ function comparisonHTML(stack: Stack): string {
     .map((label) => `<th>${esc(label)}</th>`)
     .join("")}</tr></thead><tbody>${stack.items
     .map(
-      (item, index) => `<tr class="${index === stack.focusIndex ? "focus" : ""}"><th><b>${esc(item.title)}</b>${
+      (item, index) => `<tr class="${index === stack.focusIndex ? "focus" : ""}" data-motion-index="${index}"><th><b>${esc(item.title)}</b>${
         item.subtitle ? `<span>${esc(item.subtitle)}</span>` : ""
       }</th>${labels.map((label) => `<td>${esc(valueFor(item, label))}</td>`).join("")}</tr>`,
     )
@@ -222,7 +221,7 @@ function listHTML(stack: Stack): string {
     ${presentationHead(stack, `${stack.items.length} items · swipe to move focus`)}
     <div class="list-rows">${stack.items
       .map(
-        (item, index) => `<article class="list-row glass${index === stack.focusIndex ? " focus" : ""}${item.selected ? " selected" : ""}">
+        (item, index) => `<article class="list-row glass${index === stack.focusIndex ? " focus" : ""}${item.selected ? " selected" : ""}" data-motion-index="${index}">
           <span class="list-index">${String(index + 1).padStart(2, "0")}</span>
           <div class="list-copy"><h2>${esc(item.title)}</h2>${item.subtitle ? `<span>${esc(item.subtitle)}</span>` : ""}${
             item.preview ? `<p>${esc(item.preview)}</p>` : ""
@@ -231,7 +230,7 @@ function listHTML(stack: Stack): string {
         </article>`,
       )
       .join("")}</div>
-    <div class="counter">${stack.focusIndex + 1} of ${stack.items.length}</div>
+    <div class="counter" data-motion-counter>${stack.focusIndex + 1} of ${stack.items.length}</div>
   </section>`;
 }
 
@@ -241,13 +240,13 @@ function summaryHTML(stack: Stack): string {
     <div class="summary-grid">${stack.items
       .slice(0, 6)
       .map(
-        (item, index) => `<article class="summary-card glass${index === stack.focusIndex ? " focus" : ""}">${cardInner(
+        (item, index) => `<article class="summary-card glass${index === stack.focusIndex ? " focus" : ""}" data-motion-index="${index}">${cardInner(
           item,
           stack.kind,
         )}</article>`,
       )
       .join("")}</div>
-    <div class="counter">${stack.focusIndex + 1} of ${stack.items.length}</div>
+    <div class="counter" data-motion-counter>${stack.focusIndex + 1} of ${stack.items.length}</div>
   </section>`;
 }
 
@@ -302,6 +301,23 @@ function dockHTML(s: State): string {
         `<button class="dock-item${e.on ? " on" : ""}" data-target="${esc(e.id)}">${icon(e.kind)}<span>${esc(e.title)}</span></button>`,
     )
     .join("");
+}
+
+function stageHTML(s: State, stack: Stack | null): string {
+  if (s.view === "done") return doneHTML(s);
+  if (s.view === "calendar") return s.calendarView === "week" ? weekHTML(s) : monthHTML(s);
+  if (s.view === "stack" && stack) {
+    if (stack.layout === "grid") return gridHTML(stack);
+    if (stack.layout === "comparison") return comparisonHTML(stack);
+    if (stack.layout === "list") return listHTML(stack);
+    if (stack.layout === "summary") return summaryHTML(stack);
+    return deckHTML(stack);
+  }
+  if (s.view === "reader" && stack) return readerHTML(stack);
+  return `<div class="hello glass">
+    <h1>Surface</h1>
+    <p>Ask your agent to put something here —<br/>your mail, your week, a Drive folder, anything.</p>
+  </div>`;
 }
 
 export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean) {
@@ -360,6 +376,7 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
   const dock = root.querySelector<HTMLElement>("#dock")!;
   const feed = root.querySelector<HTMLElement>("#feed")!;
   const chipDate = root.querySelector<HTMLElement>("#chip-date")!;
+  const motion = new SurfaceMotion(stage);
 
   const setDate = () => {
     chipDate.textContent = new Date().toLocaleString("en", {
@@ -386,25 +403,73 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
     while (feed.children.length > 6) feed.lastChild?.remove();
   });
 
+  let previous:
+    | {
+        view: State["view"];
+        activeStackId: string | null;
+        stackLayout?: Stack["layout"];
+        stackItems?: CardItem[];
+        focusIndex?: number;
+        anchor: string;
+        calendarView: State["calendarView"];
+      }
+    | undefined;
+
   store.subscribe((s) => {
     const dockContent = dockHTML(s);
     dock.innerHTML = dockContent;
     dock.style.display = dockContent ? "flex" : "none";
     const stack = store.activeStack();
-    if (s.view === "done") stage.innerHTML = doneHTML(s);
-    else if (s.view === "calendar") stage.innerHTML = s.calendarView === "week" ? weekHTML(s) : monthHTML(s);
-    else if (s.view === "stack" && stack) {
-      if (stack.layout === "grid") stage.innerHTML = gridHTML(stack);
-      else if (stack.layout === "comparison") stage.innerHTML = comparisonHTML(stack);
-      else if (stack.layout === "list") stage.innerHTML = listHTML(stack);
-      else if (stack.layout === "summary") stage.innerHTML = summaryHTML(stack);
-      else stage.innerHTML = deckHTML(stack);
+    const html = stageHTML(s, stack);
+    const sameStack =
+      previous &&
+      (s.view === "stack" || s.view === "reader") &&
+      s.view === previous.view &&
+      s.activeStackId === previous.activeStackId &&
+      stack?.layout === previous.stackLayout;
+    const focusChanged = sameStack && stack && previous?.focusIndex !== stack.focusIndex;
+    const itemsUnchanged = sameStack && stack?.items === previous?.stackItems;
+
+    if (focusChanged && itemsUnchanged && s.view === "stack" && stack) {
+      const compactSingleItem =
+        document.body.classList.contains("glasses-on") && (stack.layout === "list" || stack.layout === "summary");
+      if (compactSingleItem) {
+        const direction = stack.focusIndex > (previous?.focusIndex ?? 0) ? 1 : -1;
+        motion.replace(html, { kind: "swipe", direction });
+      } else {
+        motion.syncFocus(stack.focusIndex, stack.items.length, stack.title);
+      }
+    } else if (focusChanged && itemsUnchanged && s.view === "reader" && stack) {
+      const direction = stack.focusIndex > (previous?.focusIndex ?? 0) ? 1 : -1;
+      motion.replace(html, { kind: "swipe", direction });
+    } else if (
+      previous &&
+      s.view === "calendar" &&
+      previous.view === "calendar" &&
+      s.calendarView === previous.calendarView &&
+      s.anchor !== previous.anchor
+    ) {
+      const direction = new Date(`${s.anchor}T00:00:00`) > new Date(`${previous.anchor}T00:00:00`) ? 1 : -1;
+      motion.replace(html, { kind: "swipe", direction });
+    } else {
+      const sameSurface =
+        previous &&
+        s.view === previous.view &&
+        s.activeStackId === previous.activeStackId &&
+        s.calendarView === previous.calendarView;
+      motion.replace(html, { kind: sameSurface ? "refresh" : "surface" });
     }
-    else if (s.view === "reader" && stack) stage.innerHTML = readerHTML(stack);
-    else
-      stage.innerHTML = `<div class="hello glass">
-        <h1>Surface</h1>
-        <p>Ask your agent to put something here —<br/>your mail, your week, a Drive folder, anything.</p>
-      </div>`;
+
+    previous = {
+      view: s.view,
+      activeStackId: s.activeStackId,
+      stackLayout: stack?.layout,
+      stackItems: stack?.items,
+      focusIndex: stack?.focusIndex,
+      anchor: s.anchor,
+      calendarView: s.calendarView,
+    };
   });
+
+  return motion;
 }

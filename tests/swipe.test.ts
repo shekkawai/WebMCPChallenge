@@ -47,20 +47,25 @@ describe("palm swipe", () => {
     expect(isOpenPalm(pose("fist"), null, false)).toBe(false);
   });
 
-  test("maps physical right movement to next", () => {
+  test("maps physical right movement to previous like a touch carousel", () => {
     const detector = new PalmSwipeDetector();
     const palm = pose("open");
     expect(detector.push(shifted(palm, 0.65), 0)).toBeNull();
     expect(detector.push(shifted(palm, 0.56), 60)).toBeNull();
-    expect(detector.push(shifted(palm, 0.47), 120)).toBe(1);
+    expect(detector.progress).toBeLessThan(0);
+    expect(detector.progress).toBeGreaterThan(-1);
+    expect(detector.push(shifted(palm, 0.47), 120)).toBe(-1);
+    expect(detector.progress).toBe(-1);
   });
 
-  test("maps physical left movement to previous", () => {
+  test("maps physical left movement to next like a touch carousel", () => {
     const detector = new PalmSwipeDetector();
     const palm = pose("open");
     expect(detector.push(shifted(palm, 0.35), 0)).toBeNull();
     expect(detector.push(shifted(palm, 0.44), 60)).toBeNull();
-    expect(detector.push(shifted(palm, 0.53), 120)).toBe(-1);
+    expect(detector.progress).toBeGreaterThan(0);
+    expect(detector.push(shifted(palm, 0.53), 120)).toBe(1);
+    expect(detector.progress).toBe(1);
   });
 
   test("does not fire for a fist or slow drift", () => {
@@ -68,6 +73,7 @@ describe("palm swipe", () => {
     const fist = pose("fist");
     expect(detector.push(shifted(fist, 0.65), 0)).toBeNull();
     expect(detector.push(shifted(fist, 0.45), 120)).toBeNull();
+    expect(detector.progress).toBe(0);
 
     const palm = pose("open");
     expect(detector.push(shifted(palm, 0.6), 1000)).toBeNull();

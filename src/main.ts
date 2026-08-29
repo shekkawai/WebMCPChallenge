@@ -10,18 +10,18 @@ import { localDateISO } from "./utils";
 const store = new Store();
 const mcp = new WebMCPAdapter();
 
-renderApp(document.getElementById("app")!, store, mcp.available);
+const motion = renderApp(document.getElementById("app")!, store, mcp.available);
 wireTools(store, mcp);
-const gesture = attachCameraSwipe(store);
+const gesture = attachCameraSwipe(store, motion);
 const controller = attachControllerInput(store);
 const glasses = attachGlassesMode();
 
 declare global {
   interface Window {
-    __surface: { store: Store; mcp: WebMCPAdapter; gesture: CameraSwipeController; controller: ControllerInput; glasses: GlassesMode };
+    __surface: { store: Store; mcp: WebMCPAdapter; gesture: CameraSwipeController; controller: ControllerInput; glasses: GlassesMode; motion: typeof motion };
   }
 }
-window.__surface = { store, mcp, gesture, controller, glasses };
+window.__surface = { store, mcp, gesture, controller, glasses, motion };
 
 // ?demo=mail|drive|calendar|month|reader|compare seeds fake data so every view is
 // testable without an agent attached.

@@ -4,6 +4,7 @@
 
 - **Voice carries intent** — "show me next month", "open the tlive pitch doc", "reply: I'll confirm by Friday". Seconds of agent round-trip are fine for decisions.
 - **A palm swipe carries navigation** — next email, next file, next week. Handled entirely on-page (camera → MediaPipe → swipe), because navigation can't wait for a round trip.
+- **Motion stays attached to the input** — cards follow the palm continuously, then spring into place; ring and keyboard navigation use the same settling motion, while calendars and readers transition directionally.
 - **The swipe sets context the agent reads back** — `surface_get_view_state` tells the agent which card or week you are looking at, so "move *this* to Thursday" just works. Pointing with the whole screen.
 
 Mail and Calendar get tailored views; everything else can flow through `surface_present`, an intent-based renderer. The agent says whether the user needs to glance, browse, inspect, compare, choose, or triage. The page chooses the component for the current context. The same comparison becomes a table on desktop and swipeable cards inside the glasses lens, without resending data.
@@ -109,7 +110,11 @@ over the webcam feed, so tracking is visible at a glance:
 
 A swipe needs a deliberate sideways sweep (~15% of the frame width within
 ~0.3s). Slow drift and closed fists are ignored by design; after each swipe
-there is a ~0.5s cooldown before the next one can fire.
+there is a ~0.5s cooldown before the next one can fire. While the palm moves,
+the focused card follows its progress and the incoming card is revealed; an
+incomplete gesture springs back. Reduced-motion preferences disable this
+direct manipulation and all decorative transitions. It follows the familiar
+touch-carousel convention: sweep left for next, sweep right for previous.
 
 ### Ring / clicker / wheel input
 
@@ -141,6 +146,7 @@ Every pull request is automatically tested and built. Every push to `main` that 
 - [x] Event-planning flow: slot proposals → confirm-to-event, rendered invitation-card options, recipients grid, sent confirmation
 - [x] Camera palm-swipe, local MediaPipe model, explicit camera control, and landmark-level tests (ported from [dsh-jarvis-hud](https://github.com/shekkawai/dsh-jarvis-hud), MIT)
 - [x] Live hand-skeleton overlay on the camera preview, per-state status line, and on-screen gesture hints
+- [x] Unified motion system: live palm-following cards, spring settling, directional calendar/reader transitions, and reduced-motion support
 - [x] Opt-in Controller Setup for BLE rings/clickers with learned Previous, Next, and safe local Select controls
 - [x] Cloudflare Workers deployment with all camera assets verified over HTTPS
 - [ ] Verify tool calls end-to-end in ChatGPT desktop in-app browser

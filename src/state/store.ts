@@ -274,13 +274,16 @@ export class Store {
     const s = this.state;
     if (s.view === "done") {
       this.dismissDone();
+      return true;
     } else if (s.view === "stack" || s.view === "reader") {
       const stack = this.activeStack();
-      if (!stack || !stack.items.length) return;
+      if (!stack || !stack.items.length) return false;
       const focusIndex = Math.min(Math.max(stack.focusIndex + dir, 0), stack.items.length - 1);
+      if (focusIndex === stack.focusIndex) return false;
       const stacks = s.stacks.map((st) => (st.id === stack.id ? { ...st, focusIndex } : st));
       this.state = { ...s, stacks };
       this.emit();
+      return true;
     } else if (s.view === "calendar") {
       const d = new Date(s.anchor + "T00:00:00");
       if (s.calendarView === "week") d.setDate(d.getDate() + dir * 7);
@@ -290,7 +293,9 @@ export class Store {
       }
       this.state = { ...s, anchor: localDateISO(d) };
       this.emit();
+      return true;
     }
+    return false;
   }
 
   // What the user is looking at, for the agent. This is the deixis contract:
