@@ -213,6 +213,72 @@ if (demo !== null) {
       { purpose: "compare", dataKind: "location", interaction: "view" },
     );
 
+  const seedCafes = () => {
+    store.setUserLocation(22.2775, 114.173, "Wan Chai MTR");
+    store.showStack(
+      "cafes",
+      "Cafes near you",
+      "generic",
+      [
+        {
+          id: "halfway",
+          title: "Halfway Coffee",
+          subtitle: "Roastery · specialty pour-over",
+          preview: "Quiet upstairs seats, good for a laptop hour.",
+          badge: "Top pick",
+          lat: 22.2793,
+          lng: 114.1732,
+          facts: [
+            { label: "Rating", value: "4.6" },
+            { label: "Price", value: "$$" },
+            { label: "Open", value: "until 19:00" },
+          ],
+        },
+        {
+          id: "amber",
+          title: "Amber Coffee Brewery",
+          subtitle: "Espresso bar · own roast",
+          preview: "Strongest flat white in the neighbourhood.",
+          lat: 22.2768,
+          lng: 114.1755,
+          facts: [
+            { label: "Rating", value: "4.5" },
+            { label: "Price", value: "$$" },
+            { label: "Open", value: "until 18:30" },
+          ],
+        },
+        {
+          id: "corner",
+          title: "The Corner Cup",
+          subtitle: "Neighbourhood cafe",
+          preview: "Cheap, fast, and right by the tram stop.",
+          lat: 22.2801,
+          lng: 114.1712,
+          facts: [
+            { label: "Rating", value: "4.2" },
+            { label: "Price", value: "$" },
+            { label: "Open", value: "until 20:00" },
+          ],
+        },
+        {
+          id: "hidden",
+          title: "Hidden Grounds",
+          subtitle: "Courtyard cafe · brunch",
+          preview: "Outdoor tables in a quiet courtyard.",
+          lat: 22.2757,
+          lng: 114.1698,
+          facts: [
+            { label: "Rating", value: "4.4" },
+            { label: "Price", value: "$$$" },
+            { label: "Open", value: "until 17:00" },
+          ],
+        },
+      ],
+      "map",
+      { purpose: "choose", dataKind: "location", interaction: "single-select" },
+    );
+  };
+
   if (demo === "drive") store.switchTo("drive");
   else if (demo === "calendar") store.switchTo("calendar");
   else if (demo === "month") {
@@ -259,6 +325,18 @@ if (demo !== null) {
     store.selectOption(1);
   } else if (demo === "people") seedPeople();
   else if (demo === "compare") seedComparison();
+  else if (demo === "cafes") seedCafes();
+  else if (demo === "route") {
+    seedCafes();
+    void import("./geo").then(async (geo) => {
+      const from = store.state.userLocation!;
+      const target = store.activeStack()?.items.find((it) => it.id === "amber");
+      if (!target) return;
+      const route = await geo.walkingRoute(from, { lat: target.lat!, lng: target.lng! });
+      store.focusItem(target.id);
+      store.setRoute({ toId: target.id, ...route });
+    });
+  }
   else if (demo === "done") store.showDone("Invitations sent", "12 people · Aurora card · via Gmail");
   else store.switchTo("mail");
 }

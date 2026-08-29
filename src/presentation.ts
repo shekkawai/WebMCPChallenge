@@ -22,7 +22,7 @@ export const LAYOUT_HINTS = ["cards", "grid", "list", "table"] as const;
 export type LayoutHint = (typeof LAYOUT_HINTS)[number];
 
 export type PresentationContext = "desktop" | "glasses";
-export type StackLayout = "deck" | "grid" | "comparison" | "list" | "summary";
+export type StackLayout = "deck" | "grid" | "comparison" | "list" | "summary" | "map";
 
 export interface PresentationMeta {
   purpose: PresentationPurpose;
@@ -89,8 +89,16 @@ export function decidePresentation(
   purpose: PresentationPurpose,
   context: PresentationContext,
   hint?: LayoutHint,
+  hasGeo = false,
 ): RenderDecision {
   const interaction = defaultInteraction(purpose);
+  // Location shape: items carrying coordinates render as pins on a live map.
+  // This is page-side vocabulary — the agent never asked for a map, it sent
+  // location-shaped data. Inspect (read one document) and triage (bulk
+  // keep/dismiss) still use their focused layouts.
+  if (hasGeo && purpose !== "inspect" && purpose !== "triage") {
+    return { layout: "map", renderedAs: context === "glasses" ? "map-lens" : "map-pins", interaction };
+  }
   if (purpose === "compare") {
     return { layout: "comparison", renderedAs: context === "glasses" ? "comparison-cards" : "comparison-table", interaction };
   }

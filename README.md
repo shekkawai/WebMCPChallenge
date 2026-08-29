@@ -46,6 +46,8 @@ The agent's connectors know your data; the page knows your body and your focus. 
 | `surface_toggle_item` | agent → page | Mark/unmark items in a `purpose: "triage"` presentation; dynamically registered only during triage |
 | `surface_switch` | agent → page | Bring a rendered surface to the front |
 | `surface_dismiss` | agent → page | Remove a surface from the dock entirely (“close the mail panel”); registered only while surfaces exist |
+| `map_set_location` | agent → page | Set the user's (possibly simulated) position — the map's blue you-are-here dot |
+| `map_show_route` | agent → page | Draw + animate the walking route to a pin; returns distance, minutes, and street names for the agent to speak; registered only while a map is on screen |
 | `surface_open_item` | agent → page | Expand the focused card full-screen — *only while a deck is shown* |
 | `surface_close_item` | agent → page | Close the reader — *only while the reader is open* |
 | `surface_get_view_state` | page → agent | What the user is looking at (deixis: "this one") |
@@ -141,6 +143,26 @@ gestures keep their normal browser behavior. Some media/browser keys can be
 consumed by the operating system and will not reach any webpage; Controller
 Setup makes that limitation visible instead of claiming universal
 compatibility.
+
+### Live map — the location shape
+
+Items sent through `surface_present` that carry `lat`/`lng` render as numbered
+pins on a real map (Leaflet + OpenStreetMap tiles, darkened by a CSS filter —
+no API key, no backend). The map is a lazy-loaded chunk, so the base page pays
+zero bytes for it until a location surface first renders.
+
+The agent is the data source ("find a cafe near me" → its own web search →
+pins), and the user's position is **told, not tracked**: `map_set_location`
+sets the blue dot from what the user says ("assume I'm at Wan Chai MTR") —
+the page never reads device GPS. `map_show_route` has the page fetch the
+walking route (FOSSGIS OSRM, the same routing openstreetmap.org uses), draw it
+with a draw-in + flowing-dash animation, and return only the human-scale
+summary — distance, minutes, street names — through the tool channel, so the
+agent can speak directions it could never compute itself. A routing outage
+degrades to a dashed straight-line estimate; the demo never stalls.
+
+Try `?demo=cafes` (pins + you-are-here) and `?demo=route` (animated walking
+route). Swipe — palm, ring, or keys — moves pin to pin.
 
 Deploy the production build to Cloudflare Workers with `bun run deploy`.
 

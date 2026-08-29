@@ -1,5 +1,6 @@
 import type { CardItem, InviteDesign, Stack, State, Store } from "../state/store";
 import { dockTargets } from "../state/store";
+import { formatDistance, haversineM, isValidCoord } from "../geo";
 import { localDateISO, safeCssColor, safeImageUrl } from "../utils";
 import { SurfaceMotion, cardRole } from "../motion";
 
@@ -257,6 +258,37 @@ function summaryHTML(stack: Stack): string {
   </section>`;
 }
 
+function mapHTML(stack: Stack, s: State): string {
+  const focused = stack.items[stack.focusIndex];
+  const hasFocusCoord = focused && isValidCoord(focused.lat, focused.lng);
+  const routed = s.route && focused && s.route.toId === focused.id ? s.route : null;
+  const walkChip = routed
+    ? `<span class="route-chip${routed.fallback ? " approx" : ""}">🚶 ${formatDistance(routed.distanceM)} · ${routed.durationMin} min${routed.fallback ? " · straight line" : ""}</span>`
+    : s.userLocation && hasFocusCoord
+      ? `<span class="route-chip dim">${formatDistance(haversineM(s.userLocation, { lat: focused!.lat!, lng: focused!.lng! }))} away</span>`
+      : "";
+  const facts = focused?.facts
+    ?.slice(0, 3)
+    .map((fact) => `<span class="map-fact"><b>${esc(fact.label)}</b> ${esc(fact.value)}</span>`)
+    .join("") ?? "";
+  const overlay = focused
+    ? `<div class="map-overlay glass" data-motion-index="${stack.focusIndex}">
+        <div class="k">${icon(focused.kind ?? stack.kind)}<span class="map-n">${stack.focusIndex + 1}</span>${
+          focused.badge ? `<span class="badge">${esc(focused.badge)}</span>` : ""
+        }${focused.selected ? `<span class="chosen">${CHECK} chosen</span>` : ""}</div>
+        <h2>${esc(focused.title)}</h2>
+        ${focused.subtitle ? `<div class="sub">${esc(focused.subtitle)}</div>` : ""}
+        ${focused.preview ? `<p class="prevw">${esc(focused.preview)}</p>` : ""}
+        <div class="map-meta">${walkChip}${facts}</div>
+      </div>`
+    : "";
+  return `<section class="mapstage">
+      <div class="map-canvas" data-map-canvas></div>
+      ${overlay}
+      <div class="counter" data-motion-counter>${esc(stack.title)} · ${stack.focusIndex + 1} of ${stack.items.length}</div>
+    </section>`;
+}
+
 function doneHTML(s: State): string {
   return `<section class="done">
       <div class="ring">${CHECK}</div>
@@ -312,6 +344,7 @@ function stageHTML(s: State, stack: Stack | null): string {
   if (s.view === "done") return doneHTML(s);
   if (s.view === "calendar") return s.calendarView === "week" ? weekHTML(s) : monthHTML(s);
   if (s.view === "stack" && stack) {
+    if (stack.layout === "map") return mapHTML(stack, s);
     if (stack.layout === "grid") return gridHTML(stack);
     if (stack.layout === "comparison") return comparisonHTML(stack);
     if (stack.layout === "list") return listHTML(stack);
@@ -449,7 +482,8 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
 
     if (focusChanged && itemsUnchanged && s.view === "stack" && stack) {
       const compactSingleItem =
-        document.body.classList.contains("glasses-on") && (stack.layout === "list" || stack.layout === "summary");
+        stack.layout === "map" ||
+        (document.body.classList.contains("glasses-on") && (stack.layout === "list" || stack.layout === "summary"));
       if (compactSingleItem) {
         const direction = stack.focusIndex > (previous?.focusIndex ?? 0) ? 1 : -1;
         motion.replace(html, { kind: "swipe", direction });
@@ -486,7 +520,20 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
       anchor: s.anchor,
       calendarView: s.calendarView,
     };
+
   });
+
+  // Mount/refresh the live map once the stage DOM has genuinely settled —
+  // motion finalizes transitions by rewriting stage.innerHTML, which drops
+  // any node appended mid-transition, so mounting waits for stage-settled.
+  // Lazy import keeps Leaflet out of the base bundle.
+  const mountMap = () => {
+    if (store.activeStack()?.layout !== "map" || store.state.view !== "stack") return;
+    const canvases = stage.querySelectorAll<HTMLElement>("[data-map-canvas]");
+    const placeholder = canvases[canvases.length - 1];
+    if (placeholder) void import("./mapview").then((m) => m.sync(store, placeholder));
+  };
+  stage.addEventListener("stage-settled", mountMap);
 
   return motion;
 }

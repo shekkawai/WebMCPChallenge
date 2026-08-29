@@ -26,6 +26,23 @@ export interface CardItem {
   selected?: boolean;
   imageUrl?: string;
   facts?: { label: string; value: string }[];
+  lat?: number;
+  lng?: number;
+}
+
+export interface UserLocation {
+  lat: number;
+  lng: number;
+  label?: string;
+}
+
+export interface RouteState {
+  toId: string;
+  points: [number, number][];
+  distanceM: number;
+  durationMin: number;
+  streets: string[];
+  fallback: boolean;
 }
 
 export interface Stack {
@@ -71,6 +88,12 @@ export interface State {
   // D-pad focus: null = focus lives on the stage; a number = the dock tab
   // currently highlighted, indexing into dockTargets(state).
   dockFocus: number | null;
+  // The (possibly simulated) user position — the map's blue dot. Set by the
+  // agent, never read from device GPS: the user tells the agent where they are.
+  userLocation: UserLocation | null;
+  // Walking route drawn on the map, keyed to a pin. Points come from the
+  // routing service via the page; they never travel through the tool channel.
+  route: RouteState | null;
 }
 
 // The dock's tab list, in render order. The renderer and the D-pad focus model
@@ -96,6 +119,8 @@ export class Store {
     proposals: [],
     done: null,
     dockFocus: null,
+    userLocation: null,
+    route: null,
   };
 
   private listeners: Listener[] = [];
@@ -193,7 +218,7 @@ export class Store {
     const stacks = existing
       ? this.state.stacks.map((s) => (s.id === id ? stack : s))
       : [...this.state.stacks, stack];
-    this.state = { ...this.state, stacks, activeStackId: id, view: "stack", dockFocus: null };
+    this.state = { ...this.state, stacks, activeStackId: id, view: "stack", dockFocus: null, route: null };
     this.emit();
   }
 
@@ -241,6 +266,27 @@ export class Store {
     return items[idx];
   }
 
+  focusItem(id: string): boolean {
+    const stack = this.activeStack();
+    if (!stack) return false;
+    const idx = stack.items.findIndex((it) => it.id === id);
+    if (idx < 0 || idx === stack.focusIndex) return false;
+    const stacks = this.state.stacks.map((st) => (st.id === stack.id ? { ...st, focusIndex: idx } : st));
+    this.state = { ...this.state, stacks };
+    this.emit();
+    return true;
+  }
+
+  setUserLocation(lat: number, lng: number, label?: string) {
+    this.state = { ...this.state, userLocation: { lat, lng, label } };
+    this.emit();
+  }
+
+  setRoute(route: RouteState | null) {
+    this.state = { ...this.state, route };
+    this.emit();
+  }
+
   // Remove a rendered surface from the dock — the OS-taskbar "close" verb.
   // Dismissing what is on screen falls back to another stack, then the
   // calendar, then idle. Calendar events survive a dismissal: re-showing the
@@ -273,6 +319,7 @@ export class Store {
       activeStackId: wasActive ? (fallback?.id ?? null) : this.state.activeStackId,
       view: wasShowing ? (fallback ? "stack" : this.state.hasCalendar ? "calendar" : "idle") : this.state.view,
       dockFocus: null,
+      route: null,
     };
     this.emit();
     return true;
@@ -452,6 +499,14 @@ export class Store {
           : undefined,
       readerOpen: s.view === "reader",
       confirmation: s.view === "done" ? s.done?.message : undefined,
+      // Summaries only — route geometry stays between the page and the
+      // routing service, matching the IDs-not-bodies rule.
+      userLocation: s.userLocation
+        ? { lat: s.userLocation.lat, lng: s.userLocation.lng, label: s.userLocation.label }
+        : undefined,
+      route: s.route
+        ? { to: s.route.toId, distanceM: s.route.distanceM, durationMin: s.route.durationMin, fallback: s.route.fallback }
+        : undefined,
     };
   }
 }

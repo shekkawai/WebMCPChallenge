@@ -118,3 +118,33 @@ describe("surface_dismiss", () => {
     expect(context.tools.has("surface_dismiss")).toBeFalse();
   });
 });
+
+describe("map tools", () => {
+  test("coordinates make surface_present render a map and register map_show_route", async () => {
+    const store = new Store();
+    const context = new FakeContext();
+    const adapter = new WebMCPAdapter(context);
+    wireTools(store, adapter);
+
+    expect(context.tools.has("map_set_location")).toBeTrue();
+    expect(context.tools.has("map_show_route")).toBeFalse();
+
+    const receipt = await context.tools.get("surface_present").execute({
+      title: "Cafes near you",
+      purpose: "choose",
+      items: [
+        { id: "a", title: "Halfway Coffee", lat: 22.2793, lng: 114.1732 },
+        { id: "b", title: "Amber", lat: 22.2768, lng: 114.1755 },
+      ],
+    });
+    expect(receipt.receipt.renderedAs).toBe("map-pins");
+    expect(context.tools.has("map_show_route")).toBeTrue();
+
+    expect(await context.tools.get("map_show_route").execute({})).toEqual({
+      error: "no user position — call map_set_location first",
+    });
+    expect(await context.tools.get("map_set_location").execute({ lat: 200, lng: 0 })).toEqual({
+      error: "lat/lng must be valid WGS84 coordinates",
+    });
+  });
+});

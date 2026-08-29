@@ -192,3 +192,29 @@ describe("Dismissing surfaces", () => {
     expect(store.dismissSurface("calendar")).toBeFalse();
   });
 });
+
+describe("Map state", () => {
+  test("user location and route summaries reach view state without route geometry", () => {
+    const store = new Store();
+    store.showStack("cafes", "Cafes", "generic", [{ id: "a", title: "Halfway", lat: 22.28, lng: 114.17 }]);
+    store.setUserLocation(22.2775, 114.173, "Wan Chai MTR");
+    store.setRoute({ toId: "a", points: [[22.2775, 114.173], [22.28, 114.17]], distanceM: 619, durationMin: 8, streets: ["Lockhart Road"], fallback: false });
+    const view = store.getViewState() as any;
+    expect(view.userLocation.label).toBe("Wan Chai MTR");
+    expect(view.route).toEqual({ to: "a", distanceM: 619, durationMin: 8, fallback: false });
+    expect(JSON.stringify(view)).not.toContain("points");
+  });
+
+  test("re-rendering a stack clears a stale route; focusItem moves focus by id", () => {
+    const store = new Store();
+    store.showStack("cafes", "Cafes", "generic", [
+      { id: "a", title: "Halfway", lat: 22.28, lng: 114.17 },
+      { id: "b", title: "Amber", lat: 22.277, lng: 114.176 },
+    ]);
+    store.setRoute({ toId: "a", points: [], distanceM: 1, durationMin: 1, streets: [], fallback: true });
+    expect(store.focusItem("b")).toBeTrue();
+    expect(store.activeStack()?.focusIndex).toBe(1);
+    store.showStack("cafes", "Cafes", "generic", [{ id: "a", title: "Halfway", lat: 22.28, lng: 114.17 }]);
+    expect(store.state.route).toBeNull();
+  });
+});

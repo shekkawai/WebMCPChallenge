@@ -2,6 +2,7 @@ import type { Store } from "./state/store";
 import type { ToolDef, WebMCPAdapter } from "./webmcp/adapter";
 import { speak } from "./speech";
 import { safeCssColor, safeImageUrl } from "./utils";
+import { formatDistance, haversineM, isValidCoord, walkingRoute } from "./geo";
 import {
   decidePresentation,
   normalizeDataKind,
@@ -72,6 +73,8 @@ export function createSurfacePresentTool(
               badge: { type: "string", description: "Short pill highlight on the card, e.g. 'Best fit', 'New', 'Urgent'. Keep it under ~15 characters." },
               content: { type: "string", description: "Full text used when the purpose is inspect or the item is opened." },
               imageUrl: { type: "string", description: "Optional HTTPS or data:image URL." },
+              lat: { type: "number", description: "WGS84 latitude. When items carry lat+lng, the page renders them as numbered pins on a live map (location shape) — no separate map tool needed." },
+              lng: { type: "number", description: "WGS84 longitude — see lat." },
               facts: {
                 type: "array",
                 maxItems: 8,
@@ -99,7 +102,8 @@ export function createSurfacePresentTool(
       const purpose = normalizePurpose(requestedPurpose);
       const context = getContext();
       const layoutHint = normalizeLayoutHint(hint?.layout);
-      const decision = decidePresentation(purpose, context, layoutHint);
+      const hasGeo = list.some((item: any) => isValidCoord(item?.lat, item?.lng));
+      const decision = decidePresentation(purpose, context, layoutHint, hasGeo);
       const requestedInteraction = normalizeInteraction(interaction);
       const effectiveInteraction = resolveInteraction(purpose, requestedInteraction);
       const surfaceId = typeof id === "string" && id.trim() ? id.trim().slice(0, 80) : "presentation";
@@ -112,6 +116,8 @@ export function createSurfacePresentTool(
         badge: typeof item?.badge === "string" ? item.badge : undefined,
         content: typeof item?.content === "string" ? item.content : undefined,
         imageUrl: safeImageUrl(item?.imageUrl),
+        lat: isValidCoord(item?.lat, item?.lng) ? (item.lat as number) : undefined,
+        lng: isValidCoord(item?.lat, item?.lng) ? (item.lng as number) : undefined,
         facts: takeArray(item?.facts, 8)
           ?.map((fact: any) => ({
             label: typeof fact?.label === "string" ? fact.label.slice(0, 80) : "",
@@ -661,6 +667,65 @@ export function wireTools(
     },
   };
 
+  const setLocationTool: ToolDef = {
+    name: "map_set_location",
+    description:
+      "Set the user's position — the map's blue you-are-here dot. The user TELLS you where they are (real or simulated, e.g. 'assume I'm at Wan Chai MTR'); the page never reads device GPS. Distances to map pins are computed from this point.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        lat: { type: "number" },
+        lng: { type: "number" },
+        label: { type: "string", description: "Short place name shown next to the dot, e.g. 'Wan Chai MTR'." },
+      },
+      required: ["lat", "lng"],
+    },
+    execute: ({ lat, lng, label }: any) => {
+      if (!isValidCoord(lat, lng)) return { error: "lat/lng must be valid WGS84 coordinates" };
+      store.setUserLocation(lat, lng, typeof label === "string" ? label.slice(0, 60) : undefined);
+      return { set: true, lat, lng, label };
+    },
+  };
+
+  const routeTool: ToolDef = {
+    name: "map_show_route",
+    description:
+      "Draw the walking route from the user's position to a map pin (1-based number, id, or exact title; omit for the focused pin). The page fetches the street route and animates it; the result returns distance, minutes, and street names so you can speak the directions. Requires map_set_location first.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        to: { type: "string", description: "1-based pin number, item id, or exact title; omit for the user's focused pin" },
+      },
+    },
+    execute: async ({ to }: any) => {
+      const s = store.state;
+      if (!s.userLocation) return { error: "no user position — call map_set_location first" };
+      const stack = store.activeStack();
+      if (!stack) return { error: "no map surface on screen" };
+      let idx = stack.focusIndex;
+      const asNum = typeof to === "string" && /^\d+$/.test(to) ? Number(to) : typeof to === "number" ? to : null;
+      if (asNum !== null) idx = asNum - 1;
+      else if (typeof to === "string" && to) {
+        const q = to.toLowerCase();
+        idx = stack.items.findIndex((it) => it.id === to || it.title.toLowerCase() === q);
+      }
+      const target = stack.items[idx];
+      if (!target || !isValidCoord(target.lat, target.lng)) {
+        return { error: to ? `no map pin matches '${String(to)}'` : "the focused item has no coordinates" };
+      }
+      const route = await walkingRoute(s.userLocation, { lat: target.lat!, lng: target.lng! });
+      store.focusItem(target.id);
+      store.setRoute({ toId: target.id, ...route });
+      return {
+        to: { id: target.id, title: target.title },
+        distance: formatDistance(route.distanceM),
+        durationMin: route.durationMin,
+        streets: route.streets,
+        ...(route.fallback ? { fallback: "routing service unavailable — straight-line estimate shown" } : {}),
+      };
+    },
+  };
+
   const dismissTool: ToolDef = {
     name: "surface_dismiss",
     description:
@@ -686,11 +751,13 @@ export function wireTools(
     const chooseOn = stackOn && stack?.purpose === "choose";
     const triageOn = stackOn && stack?.purpose === "triage";
     const hasSurfaces = s.hasCalendar || s.stacks.length > 0;
-    const sig = [s.view, s.proposals.length > 0, optionsOn, chooseOn, triageOn, hasSurfaces, getContext()].join("|");
+    const mapOn = stackOn && stack?.layout === "map";
+    const sig = [s.view, s.proposals.length > 0, optionsOn, chooseOn, triageOn, hasSurfaces, mapOn, getContext()].join("|");
     if (sig === lastSig) return;
     lastSig = sig;
-    const tools = [presentTool, ...base];
+    const tools = [presentTool, ...base, setLocationTool];
     if (hasSurfaces) tools.push(dismissTool);
+    if (mapOn) tools.push(routeTool);
     if (s.view === "calendar") {
       tools.push(...calendarTools);
       if (s.proposals.length) tools.push(confirmSlotTool);

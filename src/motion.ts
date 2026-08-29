@@ -57,11 +57,19 @@ export class SurfaceMotion {
     this.stage = stage;
   }
 
+  // Fired after every DOM commit (immediate set, transition finalize, or a
+  // cut-short transition). Imperative mounts like the live map re-attach here,
+  // because finalize rebuilds the stage from HTML and drops appended nodes.
+  private settled() {
+    this.stage.dispatchEvent(new CustomEvent("stage-settled"));
+  }
+
   replace(html: string, options: ReplaceOptions = {}) {
     this.finishTransition();
     this.clearSwipe(false);
     if (!this.stage.firstElementChild || this.reducedMotion() || typeof this.stage.animate !== "function") {
       this.stage.innerHTML = html;
+      this.settled();
       return;
     }
 
@@ -98,6 +106,7 @@ export class SurfaceMotion {
       this.stage.innerHTML = this.finalHTML;
       this.finalHTML = null;
       this.stage.classList.remove("is-transitioning");
+      this.settled();
     });
   }
 
@@ -191,6 +200,7 @@ export class SurfaceMotion {
     this.stage.innerHTML = this.finalHTML;
     this.finalHTML = null;
     this.stage.classList.remove("is-transitioning");
+    this.settled();
   }
 
   private reducedMotion() {
