@@ -43,7 +43,7 @@ A workflow may change purpose without changing its underlying data. Candidate ev
 
 ## Presentation items
 
-Every item has a `title` and may carry `subtitle`, `summary`, `content`, `imageUrl`, `badge`, and ordered `facts`:
+Every item has a `title` and may carry `subtitle`, `summary`, `content`, `imageUrl`, `badge`, `lat`/`lng` coordinates, and ordered `facts`:
 
 ```json
 {
@@ -72,6 +72,8 @@ The host owns the mapping. This demo currently uses:
 | `compare` | Wide comparison table | One comparison card per swipe |
 | `choose` | Option deck | One option per swipe |
 | `triage` | Dense review list | One review card per swipe |
+
+Shapes are host-side vocabulary; agents speak purpose. When items carry `lat`/`lng`, this host recognizes the **location shape** and renders a live map — pins with a focus highlight on desktop (`map-pins`), the same map filling the lens in glasses context (`map-lens`) — for every purpose except `inspect` and `triage`, which keep their focused layouts. The agent never asked for a map; it sent location-shaped data. This is the extensibility rule in practice: adding the map renderer required zero agent-side changes, and an older host that predates it simply renders the same items as cards.
 
 The page re-registers `surface_present` when context changes so its tool description tells the agent which context is active. This is advisory optimization, not a correctness requirement: the render receipt is authoritative.
 
