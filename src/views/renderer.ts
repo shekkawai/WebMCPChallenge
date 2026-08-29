@@ -257,8 +257,16 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
     <div id="hint">◀ swipe ▶ · speak to act</div>
     <ul id="feed"></ul>
     <aside id="camera-panel" class="glass" hidden>
-      <video id="camera-video" autoplay muted playsinline></video>
+      <div id="camera-frame">
+        <video id="camera-video" autoplay muted playsinline></video>
+        <canvas id="camera-overlay" aria-hidden="true"></canvas>
+      </div>
       <span id="camera-status" data-state="off">camera off</span>
+      <ul id="gesture-hints">
+        <li><b>🖐</b> open palm — turns <i>green</i></li>
+        <li><b>⇄</b> sweep — prev / next</li>
+        <li><b>⌨</b> arrow keys work too</li>
+      </ul>
     </aside>
     <div id="swipe-pulse" aria-hidden="true"></div>`;
 

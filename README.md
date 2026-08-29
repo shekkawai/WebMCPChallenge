@@ -60,6 +60,21 @@ bun run dev
 # window.__surface exposes the store, WebMCP adapter, and gesture controller
 ```
 
+### Testing the camera gesture
+
+Click **Camera** in the top chip. The preview panel draws a live hand skeleton
+over the webcam feed, so tracking is visible at a glance:
+
+- **White skeleton** — your hand is tracked, but the pose isn't an open palm yet.
+- **Green skeleton** — open palm recognized; a left/right sweep will fire.
+- The status line narrates the same states (`raise a hand into view` →
+  `hand tracked — open your palm` → `open palm ✓ — sweep left / right` →
+  `swipe ✓ next`), and a gesture legend sits under the preview.
+
+A swipe needs a deliberate sideways sweep (~15% of the frame width within
+~0.3s). Slow drift and closed fists are ignored by design; after each swipe
+there is a ~0.5s cooldown before the next one can fire.
+
 Deploy the production build to Cloudflare Workers with `bun run deploy`.
 
 Every pull request is automatically tested and built. Every push to `main` that passes those checks is deployed to Cloudflare Workers by `.github/workflows/deploy.yml`. The repository requires `CLOUDFLARE_ACCOUNT_ID` and a Worker-scoped `CLOUDFLARE_API_TOKEN` as GitHub Actions secrets.
@@ -72,6 +87,7 @@ Every pull request is automatically tested and built. Every push to `main` that 
 - [x] Glass UI (direction C: card deck, Apple-glass polish)
 - [x] Event-planning flow: slot proposals → confirm-to-event, rendered invitation-card options, recipients grid, sent confirmation
 - [x] Camera palm-swipe, local MediaPipe model, explicit camera control, and landmark-level tests (ported from [dsh-jarvis-hud](https://github.com/shekkawai/dsh-jarvis-hud), MIT)
+- [x] Live hand-skeleton overlay on the camera preview, per-state status line, and on-screen gesture hints
 - [x] Cloudflare Workers deployment with all camera assets verified over HTTPS
 - [ ] Verify tool calls end-to-end in ChatGPT desktop in-app browser
 - [ ] Demo video

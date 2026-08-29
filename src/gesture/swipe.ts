@@ -1,5 +1,6 @@
 import type { Store } from "../state/store";
 import { isOpenPalm, type Point, type Point3 } from "./pose";
+import { drawHands, type OverlayHand } from "./overlay";
 
 // Keyboard fallback mirrors the palm swipe 1:1, so every part of the app is
 // testable without a camera (and in CI).
@@ -14,6 +15,10 @@ export class PalmSwipeDetector {
   private samples: { at: number; x: number }[] = [];
   private palm = false;
   private cooldownUntil = 0;
+
+  get palmActive() {
+    return this.palm;
+  }
 
   push(landmarks: Point[], at: number, world?: Point3[] | null): 1 | -1 | null {
     const palm = isOpenPalm(landmarks, world, this.palm);
@@ -60,8 +65,10 @@ export class CameraSwipeController {
   private button: HTMLButtonElement;
   private panel: HTMLElement;
   private video: HTMLVideoElement;
+  private overlay: HTMLCanvasElement;
   private status: HTMLElement;
   private pulse: HTMLElement;
+  private hint: HTMLElement | null;
   private detectors = [new PalmSwipeDetector(), new PalmSwipeDetector()];
   private stream: MediaStream | null = null;
   private landmarker: Landmarker | null = null;
@@ -70,14 +77,18 @@ export class CameraSwipeController {
   private lastSwipeAt = Number.NEGATIVE_INFINITY;
   private running = false;
   private busy = false;
+  private liveKey = "";
+  private statusHoldUntil = 0;
 
   constructor(store: Store) {
     this.store = store;
     this.button = document.querySelector<HTMLButtonElement>("#camera-toggle")!;
     this.panel = document.querySelector<HTMLElement>("#camera-panel")!;
     this.video = document.querySelector<HTMLVideoElement>("#camera-video")!;
+    this.overlay = document.querySelector<HTMLCanvasElement>("#camera-overlay")!;
     this.status = document.querySelector<HTMLElement>("#camera-status")!;
     this.pulse = document.querySelector<HTMLElement>("#swipe-pulse")!;
+    this.hint = document.querySelector<HTMLElement>("#hint");
     this.button.addEventListener("click", () => void this.toggle());
   }
 
@@ -137,7 +148,8 @@ export class CameraSwipeController {
       this.running = true;
       this.button.classList.add("on");
       this.button.textContent = "Camera on";
-      this.setStatus("show an open palm · swipe", "ready");
+      this.setStatus("raise a hand into view", "track");
+      if (this.hint) this.hint.textContent = "🖐 open palm · sweep left / right · speak to act";
       this.loop();
     } finally {
       this.busy = false;
@@ -159,6 +171,8 @@ export class CameraSwipeController {
     }
 
     const seen = result.landmarks?.length ?? 0;
+    const hands: OverlayHand[] = [];
+    let fired = false;
     for (let i = 0; i < this.detectors.length; i++) {
       const landmarks = result.landmarks?.[i];
       if (!landmarks) {
@@ -166,14 +180,44 @@ export class CameraSwipeController {
         continue;
       }
       const at = performance.now();
-      if (at - this.lastSwipeAt < 560) continue;
-      const direction = this.detectors[i].push(landmarks, at, result.worldLandmarks?.[i]);
+      const world = result.worldLandmarks?.[i];
+      if (fired || at - this.lastSwipeAt < 560) {
+        // A swipe was just consumed; keep the skeleton live while the
+        // detector cools down, judging the palm with lenient hysteresis.
+        hands.push({ landmarks, palm: isOpenPalm(landmarks, world, true) });
+        continue;
+      }
+      const direction = this.detectors[i].push(landmarks, at, world);
+      hands.push({ landmarks, palm: direction !== null || this.detectors[i].palmActive });
       if (direction) {
         this.commit(direction, at);
-        break;
+        fired = true;
       }
     }
+    this.renderOverlay(hands);
+    this.updateLiveStatus(hands);
   };
+
+  // Public so synthetic landmark sessions (tests, judges without a webcam,
+  // the deployed-site smoke check) can exercise the exact drawing path.
+  renderOverlay(hands: OverlayHand[]) {
+    const width = this.video.videoWidth || 640;
+    const height = this.video.videoHeight || 360;
+    if (this.overlay.width !== width) this.overlay.width = width;
+    if (this.overlay.height !== height) this.overlay.height = height;
+    const ctx = this.overlay.getContext("2d");
+    if (ctx) drawHands(ctx, width, height, hands);
+  }
+
+  private updateLiveStatus(hands: OverlayHand[]) {
+    if (performance.now() < this.statusHoldUntil) return;
+    const key = hands.length === 0 ? "none" : hands.some((hand) => hand.palm) ? "palm" : "hand";
+    if (key === this.liveKey) return;
+    this.liveKey = key;
+    if (key === "none") this.setStatus("raise a hand into view", "track");
+    else if (key === "hand") this.setStatus("hand tracked — open your palm", "track");
+    else this.setStatus("open palm ✓ — sweep left / right", "ready");
+  }
 
   ingestLandmarks(landmarks: Point[], at: number, world?: Point3[] | null) {
     if (at - this.lastSwipeAt < 560) return null;
@@ -187,6 +231,9 @@ export class CameraSwipeController {
     this.detectors.forEach((detector) => detector.reset());
     this.store.swipe(direction);
     this.flash(direction);
+    this.setStatus(direction > 0 ? "swipe ✓ next" : "swipe ✓ previous", "ready");
+    this.statusHoldUntil = at + 900;
+    this.liveKey = "";
   }
 
   private flash(direction: 1 | -1) {
@@ -196,7 +243,7 @@ export class CameraSwipeController {
     document.dispatchEvent(new CustomEvent("agent-feed", { detail: `gesture · swipe ${direction > 0 ? "right" : "left"}` }));
   }
 
-  private setStatus(message: string, state: "loading" | "ready" | "error" | "off") {
+  private setStatus(message: string, state: "loading" | "ready" | "track" | "error" | "off") {
     this.status.textContent = message;
     this.status.dataset.state = state;
   }
@@ -217,6 +264,10 @@ export class CameraSwipeController {
     this.landmarker = null;
     this.lastSwipeAt = Number.NEGATIVE_INFINITY;
     this.detectors.forEach((detector) => detector.reset());
+    this.liveKey = "";
+    this.statusHoldUntil = 0;
+    this.overlay.getContext("2d")?.clearRect(0, 0, this.overlay.width, this.overlay.height);
+    if (this.hint) this.hint.textContent = "◀ swipe ▶ · speak to act";
     this.button.disabled = false;
     this.button.classList.remove("on");
     this.button.textContent = "Camera";

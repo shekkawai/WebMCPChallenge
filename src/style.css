@@ -50,20 +50,33 @@ body {
 @keyframes pulse { 50% { opacity: 0.45; } }
 
 #camera-panel {
-  position: absolute; right: 26px; top: 82px; width: 174px; padding: 7px;
+  position: absolute; right: 26px; top: 82px; width: 224px; padding: 7px;
   border-radius: 20px; z-index: 12; overflow: hidden;
 }
 #camera-panel[hidden] { display: none; }
+#camera-frame { position: relative; border-radius: 14px; overflow: hidden; }
 #camera-video {
-  display: block; width: 100%; aspect-ratio: 16 / 10; border-radius: 14px;
+  display: block; width: 100%; aspect-ratio: 16 / 10;
   object-fit: cover; transform: scaleX(-1); background: rgba(0, 0, 0, 0.3);
+}
+#camera-overlay {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; transform: scaleX(-1); pointer-events: none;
 }
 #camera-status {
   display: block; padding: 7px 4px 2px; text-align: center; font-size: 10px;
   letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.48);
 }
 #camera-status[data-state="ready"] { color: #9ef3c9; }
+#camera-status[data-state="track"] { color: #ffcf8a; }
 #camera-status[data-state="error"] { color: #ffb4ac; }
+#gesture-hints {
+  list-style: none; margin: 6px 2px 2px; padding: 6px 8px 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 11px; line-height: 1.9; color: rgba(255, 255, 255, 0.62);
+}
+#gesture-hints b { font-weight: 400; margin-right: 6px; }
+#gesture-hints i { font-style: normal; color: #9ef3c9; }
 #swipe-pulse {
   position: absolute; top: 50%; z-index: 20; opacity: 0; pointer-events: none;
   font-size: 84px; font-weight: 300; color: rgba(255, 255, 255, 0.82);
