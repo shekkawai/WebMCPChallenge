@@ -20,6 +20,7 @@ function feed(line: string) {
 export class WebMCPAdapter {
   private tools = new Map<string, ToolDef>();
   private handles = new Map<string, { unregister?: () => void } | void>();
+  private warnedUnavailable = false;
 
   private ctx(): ModelContext | null {
     return ((document as any).modelContext ?? (navigator as any).modelContext ?? null) as ModelContext | null;
@@ -52,7 +53,10 @@ export class WebMCPAdapter {
   private sync() {
     const ctx = this.ctx();
     if (!ctx) {
-      feed("⚠ WebMCP not detected — keyboard fallback only (← →)");
+      if (!this.warnedUnavailable) {
+        this.warnedUnavailable = true;
+        feed("⚠ WebMCP not detected — keyboard fallback only (← →)");
+      }
       return;
     }
     const wrapped = [...this.tools.values()].map((t) => this.wrap(t));

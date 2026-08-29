@@ -13,31 +13,76 @@ attachKeyboardSwipe(store);
 
 declare global {
   interface Window {
-    __briefing: { store: Store; mcp: WebMCPAdapter };
+    __surface: { store: Store; mcp: WebMCPAdapter };
   }
 }
-window.__briefing = { store, mcp };
+window.__surface = { store, mcp };
 
-// ?demo=1 seeds fake data so the surface is testable without an agent attached.
-if (new URLSearchParams(location.search).has("demo")) {
-  store.showEmails([
+// ?demo=mail|drive|calendar|month|reader seeds fake data so every view is
+// testable without an agent attached.
+const demo = new URLSearchParams(location.search).get("demo");
+if (demo !== null) {
+  const iso = (offsetDays: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    return d.toISOString().slice(0, 10);
+  };
+
+  store.showCalendar(
+    [
+      { date: iso(0), time: "10:30", title: "AI Meetup rehearsal" },
+      { date: iso(0), time: "15:00", title: "Kelvin — tlive pricing call" },
+      { date: iso(0), time: "16:00", title: "tlive demo · hall B" },
+      { date: iso(1), time: "11:00", title: "OMP newsletter review" },
+      { date: iso(3), title: "Sparkdemy client onboarding" },
+      { date: iso(5), time: "19:00", title: "AI Meetup HK — WebMCP talk" },
+      { date: iso(8), time: "14:00", title: "Coreply client check-in" },
+      { date: iso(12), title: "Content batch day" },
+    ],
+    "week",
+  );
+
+  store.showStack("drive", "Proposals", "file", [
+    { id: "d1", kind: "folder", title: "Client Proposals", subtitle: "12 items · me", badge: "FOLDER" },
     {
-      id: "1",
-      from: "Kelvin Chan",
-      subject: "Re: tlive 報價",
-      preview: "Thanks Shek — can you confirm the per-event price by Friday?",
+      id: "d2",
+      kind: "doc",
+      title: "tlive pitch — events package",
+      subtitle: "me · Aug 27",
+      badge: "DOC",
+      preview: "Per-event pricing, audience cap tiers, and the September conference rollout plan.",
+      content:
+        "tlive — events package\n\nPricing\n· Single event: per-event licence, audience cap 500.\n· Conference tier: 3 days, multi-room, cap 2,000.\n\nRollout\nSeptember conference is the pilot: two rooms, Cantonese→English live captions, QR join for the audience relay.",
     },
-    {
-      id: "2",
-      from: "AI Meetup HK",
-      subject: "Speaker slot confirmed (Sept 12)",
-      preview: "You are confirmed for the WebMCP demo slot. Slides due Sept 10.",
-    },
-    {
-      id: "3",
-      from: "Publer",
-      subject: "Your August receipt",
-      preview: "Receipt for your August subscription is attached.",
-    },
+    { id: "d3", kind: "doc", title: "OMP content calendar", subtitle: "me · Aug 25", badge: "SHEET", preview: "September posting schedule across IG, Threads, LinkedIn." },
+    { id: "d4", kind: "file", title: "AI Meetup slides.pdf", subtitle: "me · Aug 22", badge: "PDF", preview: "18 slides — WebMCP talk draft." },
+    { id: "d5", kind: "doc", title: "WebMCP challenge notes", subtitle: "me · Aug 29", badge: "DOC", preview: "Voice = intent, swipe = navigation, get_view_state = deixis." },
+    { id: "d6", kind: "folder", title: "Receipts 2026", subtitle: "34 items · me", badge: "FOLDER" },
   ]);
+
+  store.showStack("mail", "Mail", "email", [
+    {
+      id: "m1",
+      kind: "email",
+      title: "Re: tlive 報價",
+      subtitle: "Kelvin Chan",
+      badge: "09:41",
+      preview: "Thanks Shek — the demo went well with our events team. Can you confirm the per-event price and the audience cap by Friday?",
+      content:
+        "Hi Shek,\n\nThe demo went well with our events team — the live Cantonese captions were the highlight.\n\nCould you confirm by Friday:\n1. Per-event price for a single-day conference\n2. Audience cap per room\n3. Whether the QR audience relay is included\n\nWe'd like to run it at the September conference.\n\nBest,\nKelvin",
+    },
+    { id: "m2", kind: "email", title: "Speaker slot confirmed (Sept 12)", subtitle: "AI Meetup HK", badge: "08:55", preview: "You are confirmed for the WebMCP demo slot. Slides due Sept 10." },
+    { id: "m3", kind: "email", title: "Your August receipt", subtitle: "Publer", badge: "07:12", preview: "Receipt for your August subscription is attached." },
+    { id: "m4", kind: "email", title: "Invoice #2081 — August", subtitle: "Cloudflare", badge: "06:40", preview: "Your Workers Paid plan invoice for August is ready." },
+    { id: "m5", kind: "email", title: "3 new comments on your video", subtitle: "YouTube", badge: "Yesterday", preview: "阿石OMP — new comments on the Cantonese AI dub upload." },
+    { id: "m6", kind: "email", title: "Payout of HK$4,120 initiated", subtitle: "Stripe", badge: "Yesterday", preview: "Your payout is on the way to your bank account ending 021." },
+  ]);
+
+  if (demo === "drive") store.switchTo("drive");
+  else if (demo === "calendar") store.switchTo("calendar");
+  else if (demo === "month") {
+    store.switchTo("calendar");
+    store.setCalendarView("month");
+  } else if (demo === "reader") store.openItem("m1");
+  else store.switchTo("mail");
 }
