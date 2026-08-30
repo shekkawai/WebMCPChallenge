@@ -112,7 +112,18 @@ The glasses view is a real **glasses breakpoint**, not a scaled-down screen: the
 | `surface_confirm_done` | agent → page | Full-screen check confirmation after an action completes |
 | `surface_open_image` | agent → page | Display an image from an HTTPS URL or `data:` URL (the Webroom ingestion pattern) |
 
-## Input channels
+## Input channels — pick by hardware
+
+Not every pair of glasses has a camera, so WebHUD pairs a navigation input to whatever the hardware offers. The page is the same; only the way you swipe changes:
+
+![Palm swipe for camera glasses, BLE ring for camera-less glasses](shots/inputs-pairing.png)
+
+| Your hardware | Navigation | Why it fits |
+| --- | --- | --- |
+| Glasses / laptop **with a camera** | **Palm swipe** | Hands-free; MediaPipe tracking is local, camera pixels never leave the device |
+| Display glasses **without a camera** | **$4 Bluetooth ring** | A clicker in your pocket — Previous / Next / Select becomes a full D-pad |
+| Desktop, or nothing at hand | **Arrow keys** | ← → ↓ ↑ mirror the palm swipe and ring 1:1 |
+| Every context | **Voice, through the agent** | Carries *intent* ("show my week", "book slot 2") rather than navigation |
 
 Voice carries **intent** (through the agent — seconds of round-trip are fine for decisions). Gesture, ring, and keys carry **navigation** (handled on-page, because navigation can't wait for a round trip). All channels stack; none is a mode.
 
