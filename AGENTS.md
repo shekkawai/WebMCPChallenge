@@ -7,7 +7,7 @@ redirects the old URL), entered in OpenAI's WebMCP Challenge
 only a 301 redirect to it, kept so pre-rename links and any configured ChatGPT
 connector keep working.
 
-The brand is **WebHUD** ("No OS to install. A web page, your agent, any glass.");
+The brand is **WebHUD** ("Smart glasses without the vendor OS — a web page, your agent, any glass.", sharpened 2026-08-30 to name smart glasses in the first three words);
 the underlying concept keeps its name **smart-responsive**: responsive design adapted *layout* to screen size;
 this adapts *interaction and presentation* to context. The agent says what the data is
 and what the user needs to do with it; the page decides how it looks on a desk, across

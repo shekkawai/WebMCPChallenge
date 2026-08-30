@@ -1,6 +1,6 @@
 # WebHUD
 
-**No OS to install. A web page, your agent, any glass.**
+**Smart glasses without the vendor OS — a web page, your agent, any glass.**
 
 **Entry for the [OpenAI WebMCP Challenge](https://webmcp.devpost.com/).**
 

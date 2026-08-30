@@ -361,7 +361,7 @@ function stageHTML(s: State, stack: Stack | null): string {
   // state, so the first agent render replaces it naturally.
   return `<div class="hello glass welcome">
     <h1>WebHUD</h1>
-    <p class="tagline">No OS to install. A web page, your agent, any glass.</p>
+    <p class="tagline">Smart glasses without the vendor OS — a web page, your agent, any glass.</p>
     <ol class="steps">
       <li><span class="k">1 · Connect</span><span>${
         mcpOn
