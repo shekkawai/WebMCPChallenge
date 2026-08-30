@@ -4,6 +4,8 @@
 
 **Entry for the [OpenAI WebMCP Challenge](https://webmcp.devpost.com/).**
 
+![How WebHUD works — voice carries intent, WebMCP carries the tools, the page is the display](shots/how-it-works.jpg)
+
 Today's smart glasses ship the vendor's OS, the vendor's assistant, and the vendor's app store — an assistant that doesn't know you, can't reach your tools, and locks your data to one brand of frame. WebHUD argues the display should be the dumbest part of the stack: **the glasses are just a projector, the interface is a web page, and the brain is the agent you already use** — with your memory, your connectors, your preferences.
 
 ![Vendor lock-in vs WebHUD](shots/key-visual.jpg)
