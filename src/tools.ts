@@ -670,13 +670,13 @@ export function wireTools(
   const setLocationTool: ToolDef = {
     name: "map_set_location",
     description:
-      "Set the user's position — the map's blue you-are-here dot. The user TELLS you where they are (real or simulated, e.g. 'assume I'm at Wan Chai MTR'); the page never reads device GPS. Distances to map pins are computed from this point.",
+      "Set the user's position — the map's blue you-are-here dot. The user TELLS you where they are (real or simulated, e.g. 'assume I'm at SF Caltrain'); the page never reads device GPS. Distances to map pins are computed from this point.",
     inputSchema: {
       type: "object",
       properties: {
         lat: { type: "number" },
         lng: { type: "number" },
-        label: { type: "string", description: "Short place name shown next to the dot, e.g. 'Wan Chai MTR'." },
+        label: { type: "string", description: "Short place name shown next to the dot, e.g. 'SF Caltrain'." },
       },
       required: ["lat", "lng"],
     },

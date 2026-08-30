@@ -40,7 +40,7 @@ function ensureMap(): L.Map {
   pinLayer.addTo(map);
   youLayer.addTo(map);
   routeLayer.addTo(map);
-  map.setView([22.28, 114.17], 14);
+  map.setView([37.7765, -122.3947], 14);
   return map;
 }
 

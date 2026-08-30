@@ -19,7 +19,7 @@ Your agent (ChatGPT in its in-app browser, or any WebMCP-capable agent) pulls yo
 1. Open the live URL in **ChatGPT desktop's in-app browser** (WebMCP works out of the box) or **Chrome 149+** with `chrome://flags/#enable-webmcp-testing` enabled.
 2. Ask the agent things like:
    - *"Show my latest emails on the surface"* (uses your connectors), or
-   - *"Find three venues for an annual dinner and compare them"*, then *"I'm at Wan Chai MTR — find a cafe nearby"* → *"take me to the second one"* (the page draws and animates the real walking route, and hands the agent the distance and street names to speak).
+   - *"Find three venues for an annual dinner and compare them"*, then *"I'm at SF Caltrain — find a cafe nearby"* → *"take me to the second one"* (the page draws and animates the real walking route, and hands the agent the distance and street names to speak).
 3. No camera or ring needed: **← → arrow keys mirror the palm swipe 1:1**, ↓ enters the dock (D-pad style), **G** toggles the smart-glasses simulation.
 4. No agent handy? Seeded demo states work in any browser:
    `?demo=mail | calendar | month | reader | compare | slots | options | people | cafes | route` — and add `&glasses=1` for the lens view.

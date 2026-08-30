@@ -133,8 +133,8 @@ describe("map tools", () => {
       title: "Cafes near you",
       purpose: "choose",
       items: [
-        { id: "a", title: "Halfway Coffee", lat: 22.2793, lng: 114.1732 },
-        { id: "b", title: "Amber", lat: 22.2768, lng: 114.1755 },
+        { id: "a", title: "Halfway Coffee", lat: 37.7787, lng: -122.3937 },
+        { id: "b", title: "Amber", lat: 37.781, lng: -122.39 },
       ],
     });
     expect(receipt.receipt.renderedAs).toBe("map-pins");

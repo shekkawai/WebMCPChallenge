@@ -49,10 +49,10 @@ Every item has a `title` and may carry `subtitle`, `summary`, `content`, `imageU
 {
   "id": "harbour-room",
   "title": "Harbour Room",
-  "subtitle": "Wan Chai",
+  "subtitle": "Mission Bay",
   "summary": "Best atmosphere",
   "facts": [
-    { "label": "Price", "value": "HK$18,000" },
+    { "label": "Price", "value": "$5,800" },
     { "label": "Capacity", "value": 120 }
   ]
 }
