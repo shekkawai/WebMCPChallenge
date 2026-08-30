@@ -413,7 +413,7 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
         <div><span>INPUT</span><h2>Controller Setup</h2></div>
         <button id="controller-close" type="button" aria-label="Close controller setup">×</button>
       </div>
-      <p id="controller-status">Teach the page three ring buttons</p>
+      <p id="controller-status">Scroll rings work out of the box — just turn Ring Mode on</p>
       <ol class="controller-steps">
         <li data-controller-action="previous"><span class="step-number">1</span><b>Previous</b><span class="controller-binding">Not learned</span></li>
         <li data-controller-action="next"><span class="step-number">2</span><b>Next</b><span class="controller-binding">Not learned</span></li>
@@ -421,13 +421,13 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
         <li data-controller-action="down" class="optional"><span class="step-number">4</span><b>Down · dock <small>optional</small></b><span class="controller-binding">Not learned</span></li>
         <li data-controller-action="up" class="optional"><span class="step-number">5</span><b>Up · back <small>optional</small></b><span class="controller-binding">Not learned</span></li>
       </ol>
-      <label class="controller-mode"><span><b>Ring Mode</b><small>Use only the controls learned above</small></span><input id="controller-mode" type="checkbox" /></label>
+      <label class="controller-mode"><span><b>Ring Mode</b><small>Scroll = swipe · Enter = select</small></span><input id="controller-mode" type="checkbox" /></label>
       <div class="controller-actions">
-        <button id="controller-start" type="button">Start setup</button>
+        <button id="controller-start" type="button">Remap buttons</button>
         <button id="controller-skip" type="button" hidden>Skip — 3 is enough</button>
         <button id="controller-reset" type="button" hidden>Reset</button>
       </div>
-      <p class="controller-note">Keyboard scrolling stays normal. Wheel gestures navigate only while Ring Mode is on. Calendar creation and sending still require voice confirmation.</p>
+      <p class="controller-note">Remap only if your ring sends different signals. Wheel gestures navigate only while Ring Mode is on. Calendar creation and sending still require voice confirmation.</p>
     </aside>
     <div id="swipe-pulse" aria-hidden="true"></div>`;
 

@@ -5,11 +5,11 @@ import { Store } from "../src/state/store";
 import {
   actionForToken,
   activateFocused,
+  DEFAULT_BINDINGS,
   describeInputToken,
   keyInputToken,
-  pointerInputToken,
   readerScrollStep,
-  WheelInputDetector,
+  validBindings,
   wheelInputToken,
 } from "../src/input/controller";
 
@@ -93,28 +93,29 @@ describe("ring / clicker input", () => {
     expect(keyInputToken("Shift")).toBeNull();
   });
 
-  test("learns keyboard, mouse, and wheel signals with readable labels", () => {
-    expect(pointerInputToken(0)).toBe("pointer:0");
+  test("scroll rings work with zero setup: the defaults map wheel to swipe", () => {
+    expect(actionForToken(DEFAULT_BINDINGS, wheelInputToken(0, 3))).toBe("next");
+    expect(actionForToken(DEFAULT_BINDINGS, wheelInputToken(0, -1))).toBe("previous");
+    expect(actionForToken(DEFAULT_BINDINGS, keyInputToken("Enter"))).toBe("select");
+    expect(actionForToken(DEFAULT_BINDINGS, wheelInputToken(4, 1))).toBeNull();
+  });
+
+  test("learned optional Down/Up bindings resolve, not just the required three", () => {
+    const bindings = { previous: "key:a", next: "key:b", select: "key:c", down: "key:d", up: "key:e" };
+    expect(actionForToken(bindings, "key:d")).toBe("down");
+    expect(actionForToken(bindings, "key:e")).toBe("up");
+  });
+
+  test("learns keyboard and wheel signals with readable labels", () => {
     expect(wheelInputToken(0, 20)).toBe("wheel:y:+");
     expect(wheelInputToken(-20, 5)).toBe("wheel:x:-");
     expect(describeInputToken("key: ")).toBe("Space");
-    expect(describeInputToken("pointer:0")).toBe("Mouse click");
     expect(describeInputToken("wheel:y:-")).toBe("Wheel up");
   });
 
-  test("wheel setup waits for a deliberate flick and keeps direction distinct", () => {
-    const detector = new WheelInputDetector();
-    expect(detector.push(0, 60, 0)).toBeNull();
-    expect(detector.push(0, 80, 16)).toBe("wheel:y:+");
-    expect(detector.push(0, 200, 100)).toBeNull();
-    expect(detector.push(0, -200, 700)).toBe("wheel:y:-");
-  });
-
-  test("direction change resets the wheel accumulator", () => {
-    const detector = new WheelInputDetector();
-    expect(detector.push(100, 0, 0)).toBeNull();
-    expect(detector.push(-100, 0, 16)).toBeNull();
-    expect(detector.push(-30, 0, 32)).toBe("wheel:x:-");
+  test("stale mouse-click bindings are purged so clicks stay ordinary clicks", () => {
+    const loaded = validBindings({ previous: "wheel:y:-", next: "wheel:y:+", select: "pointer:0" });
+    expect(loaded).toEqual({ previous: "wheel:y:-", next: "wheel:y:+" });
   });
 
   test("local select opens cards, selects designs, and never confirms calendar writes", () => {

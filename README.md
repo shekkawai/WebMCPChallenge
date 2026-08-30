@@ -144,7 +144,7 @@ Click **Camera** in the top chip. The preview draws a live hand skeleton over th
 
 Navigation works like a game controller: **←/→** move focus, **↓** drops an amber highlight onto the dock, ←/→ move it between surfaces, **Select** opens the highlighted tab, **↑** returns to the cards. Inside an open document, ↓/↑ scroll it instead — reading beats navigating.
 
-Click **Controller** and press the ring's Previous / Next / Select buttons once — the page learns the exact key, mouse button, or wheel direction that device emits and saves it locally. Rings that emit real arrow keys get the full D-pad with zero setup. Select opens and chooses locally but never creates a calendar event or sends anything — those still require voice confirmation through the agent.
+Click **Controller** and turn **Ring Mode** on — scroll rings work with zero setup: scroll down = Next, scroll up = Previous, Enter = Select. Rings that emit real arrow keys get the full D-pad the same way. If your device sends different signals, **Remap buttons** learns the exact key or wheel direction it emits and saves it locally. Select opens and chooses locally but never creates a calendar event or sends anything — those still require voice confirmation through the agent.
 
 ![Ring D-pad in the glasses lens](shots/dock-dpad-glasses.png)
 

@@ -24,13 +24,18 @@ const ACTION_LABELS: Record<ControllerAction, string> = {
 };
 const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta", "CapsLock", "NumLock"]);
 
+// Scroll rings behave as a mouse wheel, so Ring Mode works with zero setup:
+// flip it on and scrolling swipes the deck. Setup exists only to REMAP for
+// rings that send different signals — it is not a prerequisite.
+export const DEFAULT_BINDINGS: ControllerBindings = {
+  previous: "wheel:y:-",
+  next: "wheel:y:+",
+  select: "key:Enter",
+};
+
 export function keyInputToken(key: string): string | null {
   if (!key || MODIFIER_KEYS.has(key)) return null;
   return `key:${key}`;
-}
-
-export function pointerInputToken(button: number): string {
-  return `pointer:${button}`;
 }
 
 export function wheelInputToken(deltaX: number, deltaY: number): string | null {
@@ -42,7 +47,7 @@ export function wheelInputToken(deltaX: number, deltaY: number): string | null {
 
 export function actionForToken(bindings: ControllerBindings, token: string | null): ControllerAction | null {
   if (!token) return null;
-  return ACTIONS.find((action) => bindings[action] === token) ?? null;
+  return SETUP_ORDER.find((action) => bindings[action] === token) ?? null;
 }
 
 // Vertical scroll keys read the open document instead of acting on the deck,
@@ -60,42 +65,11 @@ export function describeInputToken(token: string | undefined): string {
   if (!token) return "Not learned";
   const [kind, value, direction] = token.split(":");
   if (kind === "key") return value === " " ? "Space" : value;
-  if (kind === "pointer") return value === "0" ? "Mouse click" : `Mouse button ${Number(value) + 1}`;
   if (kind === "wheel") {
     if (value === "x") return direction === "+" ? "Wheel right" : "Wheel left";
     return direction === "+" ? "Wheel down" : "Wheel up";
   }
   return token;
-}
-
-export class WheelInputDetector {
-  private acc = 0;
-  private token: string | null = null;
-  private cooldownUntil = 0;
-
-  push(deltaX: number, deltaY: number, at: number): string | null {
-    if (at < this.cooldownUntil) return null;
-    const token = wheelInputToken(deltaX, deltaY);
-    if (!token) return null;
-    const delta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
-    if (token !== this.token) {
-      this.token = token;
-      this.acc = delta;
-    } else {
-      this.acc += delta;
-    }
-    if (Math.abs(this.acc) < 120) return null;
-    this.acc = 0;
-    this.token = null;
-    this.cooldownUntil = at + 560;
-    return token;
-  }
-
-  reset() {
-    this.acc = 0;
-    this.token = null;
-    this.cooldownUntil = 0;
-  }
 }
 
 export type LocalSelectResult = "opened" | "selected" | "closed" | "dismissed" | "switched" | "confirmation-required" | "none";
@@ -130,12 +104,15 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
   return target instanceof Element && Boolean(target.closest("input, textarea, select, button, a, [contenteditable='true']"));
 }
 
-function validBindings(value: unknown): ControllerBindings {
+// Mouse clicks are no longer learnable (a saved pointer binding hijacked
+// every ordinary click), so stale pointer tokens are purged on load.
+export function validBindings(value: unknown): ControllerBindings {
   if (!value || typeof value !== "object") return {};
   const source = value as Record<string, unknown>;
   const bindings: ControllerBindings = {};
   for (const action of SETUP_ORDER) {
-    if (typeof source[action] === "string" && source[action]) bindings[action] = source[action] as string;
+    const token = source[action];
+    if (typeof token === "string" && token && !token.startsWith("pointer:")) bindings[action] = token;
   }
   return bindings;
 }
@@ -154,7 +131,7 @@ export class ControllerInput {
   private enabled = false;
   private learningIndex = -1;
   private captureReadyAt = 0;
-  private wheel = new WheelInputDetector();
+  private wheelCooldownUntil = 0;
   private setupBackup: { enabled: boolean; bindings: ControllerBindings } | null = null;
 
   constructor(store: Store) {
@@ -177,7 +154,6 @@ export class ControllerInput {
     this.resetButton.addEventListener("click", () => this.reset());
     this.modeToggle.addEventListener("change", () => this.setEnabled(this.modeToggle.checked));
     window.addEventListener("keydown", this.onKeyDown, true);
-    window.addEventListener("pointerdown", this.onPointerDown, true);
     window.addEventListener("wheel", this.onWheel, { capture: true, passive: false });
   }
 
@@ -193,12 +169,18 @@ export class ControllerInput {
     return { ...this.bindings };
   }
 
+  // A complete learned set replaces the defaults outright — mixing the two
+  // would double-bind the wheel. No learned set means the scroll-ring defaults.
+  private get activeBindings(): ControllerBindings {
+    return this.configured ? this.bindings : DEFAULT_BINDINGS;
+  }
+
   private load() {
     try {
       const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null") as SavedController | null;
       if (parsed?.version === 1) {
         this.bindings = validBindings(parsed.bindings);
-        this.enabled = parsed.enabled === true && ACTIONS.every((action) => Boolean(this.bindings[action]));
+        this.enabled = parsed.enabled === true;
       }
     } catch {
       this.bindings = {};
@@ -215,10 +197,11 @@ export class ControllerInput {
     }
   }
 
+  // Opening the panel never auto-starts the learn flow — defaults mean there
+  // is nothing a scroll ring needs to learn. Setup is reached by its button.
   private openPanel() {
     this.panel.hidden = false;
-    if (!this.configured) this.beginSetup();
-    else this.render();
+    this.render();
   }
 
   private closePanel() {
@@ -233,7 +216,6 @@ export class ControllerInput {
     this.enabled = false;
     this.learningIndex = 0;
     this.captureReadyAt = performance.now() + 250;
-    this.wheel.reset();
     this.render();
   }
 
@@ -244,7 +226,7 @@ export class ControllerInput {
     this.learningIndex = -1;
     if (this.setupBackup) {
       this.bindings = { ...this.setupBackup.bindings };
-      this.enabled = this.setupBackup.enabled && this.configured;
+      this.enabled = this.setupBackup.enabled;
       this.setupBackup = null;
     }
   }
@@ -258,7 +240,7 @@ export class ControllerInput {
   }
 
   private setEnabled(enabled: boolean) {
-    this.enabled = enabled && this.configured;
+    this.enabled = enabled;
     this.learningIndex = -1;
     this.save();
     this.render();
@@ -275,8 +257,9 @@ export class ControllerInput {
     }
     this.bindings[action] = token;
     this.learningIndex += 1;
-    this.captureReadyAt = performance.now() + 250;
-    this.wheel.reset();
+    // One ring press can arrive as a burst of wheel events; a longer gap
+    // between steps stops the tail of one press learning the next button.
+    this.captureReadyAt = performance.now() + 600;
     if (this.learningIndex >= SETUP_ORDER.length) this.finishSetup();
     else this.render();
     return true;
@@ -351,7 +334,7 @@ export class ControllerInput {
     }
     if (isInteractiveTarget(event.target)) return;
     if (this.enabled) {
-      const action = actionForToken(this.bindings, keyInputToken(event.key));
+      const action = actionForToken(this.activeBindings, keyInputToken(event.key));
       if (action) {
         event.preventDefault();
         event.stopImmediatePropagation();
@@ -392,52 +375,32 @@ export class ControllerInput {
     }
   };
 
-  private onPointerDown = (event: PointerEvent) => {
-    const token = pointerInputToken(event.button);
-    if (this.learningIndex >= 0) {
-      // A ring click anywhere is learnable, but clicking the panel's own
-      // controls is clearly intent to press them (e.g. Close to cancel).
-      const target = event.target as Element | null;
-      if (target?.closest?.("[data-controller-ui] button, [data-controller-ui] input, [data-controller-ui] label")) return;
-      if (this.capture(token)) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-      }
-      return;
-    }
-    if (isInteractiveTarget(event.target) || (event.target as Element | null)?.closest?.("[data-controller-ui]")) return;
-    if (!this.enabled) return;
-    const action = actionForToken(this.bindings, token);
-    if (!action) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    this.perform(action);
-  };
-
+  // Ring presses arrive as single wheel events (often tiny line-unit deltas),
+  // so both setup and Ring Mode act on the FIRST event of a press — no pixel
+  // accumulator, which a ring could never satisfy. A cooldown turns the burst
+  // a single press can emit into one action.
   private onWheel = (event: WheelEvent) => {
-    const immediateToken = wheelInputToken(event.deltaX, event.deltaY);
+    const token = wheelInputToken(event.deltaX, event.deltaY);
     if (this.learningIndex >= 0) {
-      const token = this.wheel.push(event.deltaX, event.deltaY, performance.now());
-      if (token && this.capture(token)) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-      }
+      if (!token) return;
+      // Setup owns the wheel completely — the page must not scroll while a
+      // press is being learned, including the cooldown tail of the last one.
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      this.capture(token);
       return;
     }
     if (!this.enabled) return;
     // Reading beats navigating: wheel over an open document always scrolls it,
-    // even when a wheel direction is a learned ring binding.
-    if ((event.target as Element | null)?.closest?.(".reader")) {
-      this.wheel.reset();
-      return;
-    }
-    const immediateAction = actionForToken(this.bindings, immediateToken);
-    if (immediateAction) event.preventDefault();
-    const token = this.wheel.push(event.deltaX, event.deltaY, performance.now());
-    const action = actionForToken(this.bindings, token);
+    // even though the wheel directions are (default or learned) bindings.
+    if ((event.target as Element | null)?.closest?.(".reader")) return;
+    const action = actionForToken(this.activeBindings, token);
     if (!action) return;
     event.preventDefault();
     event.stopImmediatePropagation();
+    const now = performance.now();
+    if (now < this.wheelCooldownUntil) return;
+    this.wheelCooldownUntil = now + 420;
     this.perform(action);
   };
 
@@ -445,16 +408,17 @@ export class ControllerInput {
     this.button.textContent = this.enabled ? "Ring on" : "Controller";
     this.button.classList.toggle("on", this.enabled);
     this.modeToggle.checked = this.enabled;
-    this.modeToggle.disabled = !this.configured;
-    this.startButton.textContent = this.configured ? "Relearn controls" : "Start setup";
+    this.startButton.textContent = this.configured ? "Relearn controls" : "Remap buttons";
     this.resetButton.hidden = !this.configured;
 
+    const learning = this.learningIndex >= 0;
     for (const action of SETUP_ORDER) {
       const row = this.panel.querySelector<HTMLElement>(`[data-controller-action='${action}']`)!;
       const value = row.querySelector<HTMLElement>(".controller-binding")!;
+      const shown = learning ? this.bindings[action] : this.activeBindings[action];
       row.classList.toggle("current", SETUP_ORDER[this.learningIndex] === action);
-      row.classList.toggle("learned", Boolean(this.bindings[action]));
-      value.textContent = describeInputToken(this.bindings[action]);
+      row.classList.toggle("learned", Boolean(shown));
+      value.textContent = learning || this.configured ? describeInputToken(shown) : shown ? `${describeInputToken(shown)} · default` : "—";
     }
     this.skipButton.hidden = !(this.learningIndex >= ACTIONS.length && this.learningIndex < SETUP_ORDER.length);
 
@@ -462,8 +426,9 @@ export class ControllerInput {
     if (current && OPTIONAL_ACTIONS.includes(current))
       this.status.textContent = `Optional: press ${ACTION_LABELS[current]} on the ring — or Skip to use 3 buttons`;
     else if (current) this.status.textContent = `Press ${ACTION_LABELS[current]} once on the ring`;
-    else if (!this.configured) this.status.textContent = "Teach the page three ring buttons — Down/Up are optional";
+    else if (this.enabled && !this.configured) this.status.textContent = "Ring Mode on · scroll = Previous / Next, Enter = Select";
     else if (this.enabled) this.status.textContent = "Ring Mode is on · learned controls only";
+    else if (!this.configured) this.status.textContent = "Scroll rings work out of the box — just turn Ring Mode on";
     else this.status.textContent = "Ready · enable Ring Mode when using the ring";
   }
 
