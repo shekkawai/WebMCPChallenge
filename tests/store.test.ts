@@ -217,4 +217,16 @@ describe("Map state", () => {
     store.showStack("cafes", "Cafes", "generic", [{ id: "a", title: "Halfway", lat: 37.7787, lng: -122.3937 }]);
     expect(store.state.route).toBeNull();
   });
+
+  test("routePending clears on setRoute and on a new surface", () => {
+    const store = new Store();
+    store.showStack("cafes", "Cafes", "generic", [{ id: "a", title: "Halfway", lat: 37.7787, lng: -122.3937 }]);
+    store.setRoutePending(true);
+    expect(store.state.routePending).toBeTrue();
+    store.setRoute({ toId: "a", points: [], distanceM: 1, durationMin: 1, streets: [], fallback: true });
+    expect(store.state.routePending).toBeFalse();
+    store.setRoutePending(true);
+    store.showStack("cafes", "Cafes", "generic", [{ id: "a", title: "Halfway", lat: 37.7787, lng: -122.3937 }]);
+    expect(store.state.routePending).toBeFalse();
+  });
 });

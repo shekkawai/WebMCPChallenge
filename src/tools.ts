@@ -713,8 +713,9 @@ export function wireTools(
       if (!target || !isValidCoord(target.lat, target.lng)) {
         return { error: to ? `no map pin matches '${String(to)}'` : "the focused item has no coordinates" };
       }
-      const route = await walkingRoute(s.userLocation, { lat: target.lat!, lng: target.lng! });
       store.focusItem(target.id);
+      store.setRoutePending(true);
+      const route = await walkingRoute(s.userLocation, { lat: target.lat!, lng: target.lng! });
       store.setRoute({ toId: target.id, ...route });
       return {
         to: { id: target.id, title: target.title },

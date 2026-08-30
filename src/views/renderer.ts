@@ -266,7 +266,9 @@ function mapHTML(stack: Stack, s: State): string {
   const focused = stack.items[stack.focusIndex];
   const hasFocusCoord = focused && isValidCoord(focused.lat, focused.lng);
   const routed = s.route && focused && s.route.toId === focused.id ? s.route : null;
-  const walkChip = routed
+  const walkChip = s.routePending
+    ? `<span class="route-chip pending"><span class="mlspin"></span>plotting route…</span>`
+    : routed
     ? `<span class="route-chip${routed.fallback ? " approx" : ""}">🚶 ${formatDistance(routed.distanceM)} · ${routed.durationMin} min${routed.fallback ? " · straight line" : ""}</span>`
     : s.userLocation && hasFocusCoord
       ? `<span class="route-chip dim">${formatDistance(haversineM(s.userLocation, { lat: focused!.lat!, lng: focused!.lng! }))} away</span>`
@@ -287,7 +289,9 @@ function mapHTML(stack: Stack, s: State): string {
       </div>`
     : "";
   return `<section class="mapstage">
-      <div class="map-canvas" data-map-canvas></div>
+      <div class="map-canvas" data-map-canvas>
+        <div class="map-loading" data-map-loading><span class="pill"><span class="mlspin"></span>Loading map…</span></div>
+      </div>
       ${overlay}
       <div class="counter" data-motion-counter>${esc(stack.title)} · ${stack.focusIndex + 1} of ${stack.items.length}</div>
     </section>`;
@@ -549,7 +553,13 @@ export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean
     if (store.activeStack()?.layout !== "map" || store.state.view !== "stack") return;
     const canvases = stage.querySelectorAll<HTMLElement>("[data-map-canvas]");
     const placeholder = canvases[canvases.length - 1];
-    if (placeholder) void import("./mapview").then((m) => m.sync(store, placeholder));
+    if (placeholder)
+      void import("./mapview")
+        .then((m) => m.sync(store, placeholder))
+        .catch(() => {
+          const loading = placeholder.querySelector<HTMLElement>("[data-map-loading]");
+          if (loading) loading.innerHTML = '<span class="pill">Map unavailable — check connection</span>';
+        });
   };
   stage.addEventListener("stage-settled", mountMap);
 

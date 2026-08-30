@@ -147,4 +147,36 @@ describe("map tools", () => {
       error: "lat/lng must be valid WGS84 coordinates",
     });
   });
+
+  test("map_show_route flags routePending while the routing fetch is in flight", async () => {
+    const store = new Store();
+    const context = new FakeContext();
+    const adapter = new WebMCPAdapter(context);
+    wireTools(store, adapter);
+    await context.tools.get("surface_present").execute({
+      title: "Cafes near you",
+      purpose: "choose",
+      items: [{ id: "a", title: "Halfway Coffee", lat: 37.7787, lng: -122.3937 }],
+    });
+    await context.tools.get("map_set_location").execute({ lat: 37.7765, lng: -122.3947 });
+
+    const realFetch = globalThis.fetch;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    globalThis.fetch = (async () => {
+      await gate;
+      throw new Error("offline");
+    }) as any;
+    try {
+      const inFlight = context.tools.get("map_show_route").execute({});
+      expect(store.state.routePending).toBeTrue();
+      release();
+      const result = await inFlight;
+      expect(store.state.routePending).toBeFalse();
+      expect(store.state.route?.fallback).toBeTrue();
+      expect(result.fallback).toBeDefined();
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
 });

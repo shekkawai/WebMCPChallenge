@@ -747,6 +747,41 @@ body:is(.glasses-on, .compact) #swipe-pulse { font-size: 44px; }
 }
 .route-chip.dim { background: rgba(255, 255, 255, 0.07); color: rgba(255, 255, 255, 0.6); border-color: transparent; }
 .route-chip.approx { border-style: dashed; }
+.route-chip.pending {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(255, 255, 255, 0.07); color: rgba(255, 255, 255, 0.65); border-color: transparent;
+  animation: pending-pulse 1.4s ease-in-out infinite;
+}
+@keyframes pending-pulse {
+  50% { opacity: 0.55; }
+}
+
+/* Delayed first-load overlay: invisible for 600ms so it never flickers on
+   warm re-renders (motion transitions run ≤280ms and sync removes it right
+   after stage-settled); on a genuinely slow chunk/tile load it fades in. */
+.map-loading {
+  position: absolute; inset: 0; z-index: 800; display: grid; place-items: center;
+  pointer-events: none; opacity: 0;
+  animation: map-loading-in 0.4s ease 0.6s forwards;
+}
+.map-loading .pill {
+  display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px;
+  border-radius: 999px; background: rgba(16, 20, 30, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14); backdrop-filter: blur(10px);
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+@keyframes map-loading-in {
+  to { opacity: 1; }
+}
+.mlspin {
+  width: 13px; height: 13px; border-radius: 50%; flex: none;
+  border: 2px solid rgba(255, 255, 255, 0.2); border-top-color: rgba(255, 207, 138, 0.9);
+  animation: mlspin 0.8s linear infinite;
+}
+@keyframes mlspin {
+  to { transform: rotate(360deg); }
+}
 .map-fact {
   padding: 4px 10px; border-radius: 11px; font-size: 11px;
   background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.6);

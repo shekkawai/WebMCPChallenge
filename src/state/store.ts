@@ -94,6 +94,9 @@ export interface State {
   // Walking route drawn on the map, keyed to a pin. Points come from the
   // routing service via the page; they never travel through the tool channel.
   route: RouteState | null;
+  // True while map_show_route is waiting on the routing service — the map
+  // overlay shows a "plotting route" chip so the wait is visibly alive.
+  routePending: boolean;
 }
 
 // The dock's tab list, in render order. The renderer and the D-pad focus model
@@ -121,6 +124,7 @@ export class Store {
     dockFocus: null,
     userLocation: null,
     route: null,
+    routePending: false,
   };
 
   private listeners: Listener[] = [];
@@ -218,7 +222,7 @@ export class Store {
     const stacks = existing
       ? this.state.stacks.map((s) => (s.id === id ? stack : s))
       : [...this.state.stacks, stack];
-    this.state = { ...this.state, stacks, activeStackId: id, view: "stack", dockFocus: null, route: null };
+    this.state = { ...this.state, stacks, activeStackId: id, view: "stack", dockFocus: null, route: null, routePending: false };
     this.emit();
   }
 
@@ -283,7 +287,13 @@ export class Store {
   }
 
   setRoute(route: RouteState | null) {
-    this.state = { ...this.state, route };
+    this.state = { ...this.state, route, routePending: false };
+    this.emit();
+  }
+
+  setRoutePending(pending: boolean) {
+    if (this.state.routePending === pending) return;
+    this.state = { ...this.state, routePending: pending };
     this.emit();
   }
 
@@ -320,6 +330,7 @@ export class Store {
       view: wasShowing ? (fallback ? "stack" : this.state.hasCalendar ? "calendar" : "idle") : this.state.view,
       dockFocus: null,
       route: null,
+      routePending: false,
     };
     this.emit();
     return true;

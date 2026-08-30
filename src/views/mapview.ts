@@ -32,11 +32,35 @@ const reducedMotion = () =>
 const TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
+// First-load affordance: the stage HTML carries a delayed "Loading map…"
+// overlay (see .map-loading). It stays until the first full tile batch lands
+// ('load' fires even when individual tiles error), then fades out. Once tiles
+// have loaded once, every later sync removes the overlay before its delayed
+// fade-in can ever show it.
+let tilesLoaded = false;
+let loadingEl: HTMLElement | null = null;
+
+function dismissLoading() {
+  const el = loadingEl;
+  loadingEl = null;
+  if (!el) return;
+  el.style.animation = "none";
+  el.style.transition = "opacity 0.35s ease";
+  el.getBoundingClientRect();
+  el.style.opacity = "0";
+  setTimeout(() => el.remove(), 400);
+}
+
 function ensureMap(): L.Map {
   if (map) return map;
   map = L.map(container, { zoomControl: false, attributionControl: true });
   map.attributionControl.setPrefix(false);
-  L.tileLayer(TILES, { attribution: ATTRIBUTION, maxZoom: 19, className: "map-dark-tiles" }).addTo(map);
+  const tiles = L.tileLayer(TILES, { attribution: ATTRIBUTION, maxZoom: 19, className: "map-dark-tiles" });
+  tiles.once("load", () => {
+    tilesLoaded = true;
+    dismissLoading();
+  });
+  tiles.addTo(map);
   pinLayer.addTo(map);
   youLayer.addTo(map);
   routeLayer.addTo(map);
@@ -137,6 +161,11 @@ export function sync(store: Store, placeholder: HTMLElement) {
   if (!stack) return;
   if (container.parentElement !== placeholder) {
     placeholder.appendChild(container);
+  }
+  const loading = placeholder.querySelector<HTMLElement>("[data-map-loading]");
+  if (loading) {
+    if (tilesLoaded) loading.remove();
+    else loadingEl = loading;
   }
   const m = ensureMap();
   // invalidateSize cancels any in-flight fly animation, so only call it when
