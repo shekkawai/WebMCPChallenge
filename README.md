@@ -120,7 +120,7 @@ The glasses view is a real **glasses breakpoint**, not a scaled-down screen: the
 
 Not every pair of glasses has a camera, so WebHUD pairs a navigation input to whatever the hardware offers. The page is the same; only the way you swipe changes:
 
-![Palm swipe for camera glasses, BLE ring for camera-less glasses](shots/inputs-pairing.png)
+![Camera glasses use a palm swipe; camera-less glasses use a $4 Bluetooth ring — same page, same swipe](shots/input-pairing.jpg)
 
 | Your hardware | Navigation | Why it fits |
 | --- | --- | --- |
@@ -128,6 +128,10 @@ Not every pair of glasses has a camera, so WebHUD pairs a navigation input to wh
 | Display glasses **without a camera** | **$4 Bluetooth ring** | A clicker in your pocket — Previous / Next / Select becomes a full D-pad |
 | Desktop, or nothing at hand | **Arrow keys** | ← → ↓ ↑ mirror the palm swipe and ring 1:1 |
 | Every context | **Voice, through the agent** | Carries *intent* ("show my week", "book slot 2") rather than navigation |
+
+As implemented — real captures of both channels:
+
+![Palm swipe for camera glasses, BLE ring for camera-less glasses](shots/inputs-pairing.png)
 
 Voice carries **intent** (through the agent — seconds of round-trip are fine for decisions). Gesture, ring, and keys carry **navigation** (handled on-page, because navigation can't wait for a round trip). All channels stack; none is a mode.
 
