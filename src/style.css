@@ -187,6 +187,27 @@ body {
 }
 .hello h1 { font-size: 40px; font-weight: 750; letter-spacing: -0.02em; }
 .hello p { margin-top: 14px; color: rgba(255, 255, 255, 0.55); font-size: 16px; line-height: 1.6; }
+.hello.welcome { max-width: 640px; text-align: left; }
+.hello.welcome h1 {
+  background: linear-gradient(100deg, #9be9dc, #7cc0ff);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.hello.welcome .tagline { margin-top: 6px; color: rgba(255, 255, 255, 0.72); font-size: 17px; }
+.hello.welcome .steps { margin-top: 22px; list-style: none; display: grid; gap: 14px; }
+.hello.welcome .steps li {
+  display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: baseline;
+  font-size: 14.5px; line-height: 1.55; color: rgba(255, 255, 255, 0.62);
+}
+.hello.welcome .steps .k { color: #9be9dc; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+.hello.welcome .steps b { color: rgba(255, 255, 255, 0.9); font-weight: 640; }
+.hello.welcome .fallback { margin-top: 20px; font-size: 12.5px; color: rgba(255, 255, 255, 0.38); }
+.hello.welcome .fallback code { font-family: inherit; color: rgba(255, 255, 255, 0.55); }
+body.glasses-on .hello.welcome { max-width: none; }
+body.glasses-on .hello.welcome .tagline { font-size: 13px; }
+body.glasses-on .hello.welcome .steps { margin-top: 12px; gap: 8px; }
+body.glasses-on .hello.welcome .steps li { grid-template-columns: 94px 1fr; font-size: 11.5px; }
+body.glasses-on .hello.welcome .steps .k { letter-spacing: 0.06em; }
+body.glasses-on .hello.welcome .fallback { display: none; }
 
 /* ---- card deck ---- */
 .deck { position: relative; height: 100%; }

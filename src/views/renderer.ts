@@ -7,6 +7,10 @@ import { SurfaceMotion, cardRole } from "../motion";
 const esc = (s: string) =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
+// Whether a WebMCP host is attached — set once by renderApp, read by the
+// bare-URL welcome state so its first step reflects reality.
+let mcpOn = false;
+
 const ICONS: Record<string, string> = {
   email:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4.5 7.5 7.5 5.5 7.5-5.5"/></svg>',
@@ -352,13 +356,27 @@ function stageHTML(s: State, stack: Stack | null): string {
     return deckHTML(stack);
   }
   if (s.view === "reader" && stack) return readerHTML(stack);
-  return `<div class="hello glass">
-    <h1>Surface</h1>
-    <p>Ask your agent to put something here —<br/>your mail, your week, a Drive folder, anything.</p>
+  // The bare-URL landing doubles as the 30-second pitch: what this page is,
+  // how the agent connects, and where the glasses view lives. It is the empty
+  // state, so the first agent render replaces it naturally.
+  return `<div class="hello glass welcome">
+    <h1>WebHUD</h1>
+    <p class="tagline">No OS to install. A web page, your agent, any glass.</p>
+    <ol class="steps">
+      <li><span class="k">1 · Connect</span><span>${
+        mcpOn
+          ? `Your agent is connected — WebMCP is live on this page ✓`
+          : `Open this page inside <b>ChatGPT's browser</b> — WebMCP works out of the box`
+      }</span></li>
+      <li><span class="k">2 · Talk</span><span>Use <b>ChatGPT Voice</b>: “show my emails” · “find three venues and compare” · “find a cafe near me”</span></li>
+      <li><span class="k">3 · Project</span><span>Press <b>G</b> for the smart-glasses lens — swipe with palm, ring, or ← →</span></li>
+    </ol>
+    <p class="fallback">No agent handy? Add <code>?demo=calendar</code> to the URL, or just press ← →.</p>
   </div>`;
 }
 
 export function renderApp(root: HTMLElement, store: Store, mcpAvailable: boolean) {
+  mcpOn = mcpAvailable;
   root.innerHTML = `
     <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
     <div id="chip" class="glass">
