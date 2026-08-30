@@ -1,6 +1,6 @@
-# Smart Responsive Presentation for WebMCP
+# Smart-Responsive Presentation for WebMCP — the WebHUD intent contract
 
-Status: experimental proposal implemented by this challenge demo.
+Status: experimental proposal implemented by [WebHUD](README.md), this challenge demo.
 
 ## Abstract
 

@@ -127,7 +127,7 @@ export function presentationDescription(context: PresentationContext): string {
       ? "Current context: glasses. The page will use focused, swipeable layouts and keep comparisons concise."
       : "Current context: desktop. The page can use wider tables, lists, grids, and card decks.";
   return (
-    "Present structured data on this Smart Responsive surface. Choose only the user's purpose; the page chooses the UI for the current context. " +
+    "Present structured data on this WebHUD smart-responsive surface. Choose only the user's purpose; the page chooses the UI for the current context. " +
     "Purposes: glance = key facts in seconds (next event); browse = explore a collection (files or news); " +
     "inspect = examine one item deeply (read an email); compare = weigh multiple items by shared facts (venues by price); " +
     "choose = pick one option to act on (invitation design); triage = prioritize, keep, dismiss, or organize many items (inbox review). " +

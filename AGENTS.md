@@ -1,10 +1,14 @@
-# WebMCP Challenge — agent notes
+# WebHUD (WebMCP Challenge entry) — agent notes
 
-Public MIT repo `shekkawai/WebMCPChallenge`, entered in OpenAI's WebMCP Challenge
+Public MIT repo `shekkawai/webhud` (renamed 2026-08-30 from `WebMCPChallenge`; GitHub
+redirects the old URL), entered in OpenAI's WebMCP Challenge
 (**deadline Sept 4 2026, 04:00 HK**). Live at
-`https://webmcp-challenge.shekkawai.workers.dev`.
+`https://webhud.shekkawai.workers.dev` — the old worker `webmcp-challenge` now serves
+only a 301 redirect to it, kept so pre-rename links and any configured ChatGPT
+connector keep working.
 
-The pitch is **Smart Responsive**: responsive design adapted *layout* to screen size;
+The brand is **WebHUD** ("No OS to install. A web page, your agent, any glass.");
+the underlying concept keeps its name **smart-responsive**: responsive design adapted *layout* to screen size;
 this adapts *interaction and presentation* to context. The agent says what the data is
 and what the user needs to do with it; the page decides how it looks on a desk, across
 a room, or in a lens. `SPEC.md` is the standard proposal and is the most quotable

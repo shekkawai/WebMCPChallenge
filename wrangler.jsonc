@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "webmcp-challenge",
+  "name": "webhud",
   "compatibility_date": "2026-08-29",
   "assets": {
     "directory": "./dist",

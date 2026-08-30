@@ -1,13 +1,18 @@
-# Smart Responsive — an agent-rendered briefing surface
+# WebHUD
+
+**No OS to install. A web page, your agent, any glass.**
 
 **Entry for the [OpenAI WebMCP Challenge](https://webmcp.devpost.com/).**
-Your agent (ChatGPT in its in-app browser, or any WebMCP-capable agent) pulls your real data through its own connectors — Gmail, Google Calendar, Google Drive, web search — and renders it onto a full-screen glass surface that you drive from two metres away with **voice, a palm swipe, or a $4 Bluetooth ring**. The page adapts what it renders to the context: the same tool call becomes a comparison table on a desktop and swipeable cards inside a smart-glasses lens.
 
-**The thesis:** responsive design adapted *layout* to screens. Smart Responsive adapts *interaction and presentation* to context — and WebMCP is the channel where the agent's knowledge meets the human's physical attention.
+Today's smart glasses ship the vendor's OS, the vendor's assistant, and the vendor's app store — an assistant that doesn't know you, can't reach your tools, and locks your data to one brand of frame. WebHUD argues the display should be the dumbest part of the stack: **the glasses are just a projector, the interface is a web page, and the brain is the agent you already use** — with your memory, your connectors, your preferences.
+
+Your agent (ChatGPT in its in-app browser, or any WebMCP-capable agent) pulls your real data through its own connectors — Gmail, Google Calendar, Google Drive, web search — and renders it onto a full-screen heads-up surface that you drive from two metres away with **voice, a palm swipe, or a $4 Bluetooth ring**. The page adapts what it renders to the context: the same tool call becomes a comparison table on a desktop and swipeable cards inside a smart-glasses lens.
+
+**The thesis:** responsive design adapted *layout* to screens. WebHUD's smart-responsive contract adapts *interaction and presentation* to context — and WebMCP is the channel where the agent's knowledge meets the human's physical attention.
 
 ![Walking route rendered inside the glasses lens](shots/map-route-glasses.png)
 
-**Live demo:** <https://webmcp-challenge.shekkawai.workers.dev>
+**Live demo:** <https://webhud.shekkawai.workers.dev>
 
 ## Try it in 60 seconds (judges)
 
@@ -83,7 +88,7 @@ The glasses view is a real **glasses breakpoint**, not a scaled-down screen: the
 
 | Tool | Direction | Purpose |
 | --- | --- | --- |
-| `surface_present` | agent → page | **Smart Responsive**: render semantic data by purpose (`glance / browse / inspect / compare / choose / triage`), adapting desktop ↔ glasses and returning a render receipt |
+| `surface_present` | agent → page | **The smart-responsive contract**: render semantic data by purpose (`glance / browse / inspect / compare / choose / triage`), adapting desktop ↔ glasses and returning a render receipt |
 | `surface_show_calendar` | agent → page | Render fetched events as a week/month view |
 | `surface_show_emails` | agent → page | Render fetched emails as swipeable cards (pass `body` for full text) |
 | `surface_show_files` | agent → page | Render a Drive folder listing as cards |
