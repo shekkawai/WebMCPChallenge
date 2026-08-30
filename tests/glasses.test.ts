@@ -17,18 +17,38 @@ describe("glasses geometry", () => {
       // The whole glasses frame fits inside the viewport height — a wider
       // window must never crop it.
       expect(g.frameHeight).toBeLessThanOrEqual(v.vh + 0.5);
-      expect(g.frameHeight / v.vh).toBeGreaterThan(0.9);
+      // The lens display box always fits the viewport width — on a portrait
+      // phone the frame shrinks rather than the app overflowing the screen.
+      expect(g.boxW).toBeLessThanOrEqual(v.vw * 0.95);
       // Lens display box is centred on the viewport.
       expect(g.boxLeft + g.boxW / 2).toBeCloseTo(v.vw / 2, 3);
       expect(g.boxTop + g.boxH / 2).toBeCloseTo(v.vh / 2, 3);
-      // The photo never leaves a gap above or below.
-      expect(g.photoTop).toBeLessThanOrEqual(0);
-      expect(g.photoTop + g.dispH).toBeGreaterThanOrEqual(v.vh);
+      // Where the width cap is not what sized the frame (landscape/square),
+      // the frame fills the height and the photo leaves no vertical gap.
+      // Portrait trades those for fitting the width; ambient blur fills in.
+      if (g.frameHeight / v.vh > 0.9) {
+        expect(g.photoTop).toBeLessThanOrEqual(0);
+        expect(g.photoTop + g.dispH).toBeGreaterThanOrEqual(v.vh);
+      }
       // The display box sits inside the photo's lens, not off it.
       expect(g.boxW).toBeLessThan(g.dispW);
       expect(g.boxH).toBeLessThan(g.dispH);
     });
   }
+
+  test("landscape and square viewports still fill the height", () => {
+    for (const v of VIEWPORTS.filter((v) => v.vw >= v.vh)) {
+      const g = glassesGeometry(v.vw, v.vh);
+      expect(g.frameHeight / v.vh).toBeGreaterThan(0.9);
+    }
+  });
+
+  test("portrait phone: frame shrinks to fit, app box stays on screen", () => {
+    const g = glassesGeometry(390, 844);
+    expect(g.boxLeft).toBeGreaterThanOrEqual(0);
+    expect(g.boxLeft + g.boxW).toBeLessThanOrEqual(390);
+    expect(g.boxW).toBeGreaterThan(300);
+  });
 
   test("the photo bleeds off the left more than the right", () => {
     const g = glassesGeometry(1920, 1080);

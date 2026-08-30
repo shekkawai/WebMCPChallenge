@@ -5,6 +5,7 @@ import { renderApp } from "./views/renderer";
 import { attachCameraSwipe, type CameraSwipeController } from "./gesture/swipe";
 import { attachControllerInput, type ControllerInput } from "./input/controller";
 import { attachGlassesMode, type GlassesMode } from "./views/glasses";
+import { attachTouchSwipe } from "./input/touch";
 import { localDateISO } from "./utils";
 
 const store = new Store();
@@ -15,6 +16,14 @@ wireTools(store, mcp);
 const gesture = attachCameraSwipe(store, motion);
 const controller = attachControllerInput(store);
 const glasses = attachGlassesMode();
+attachTouchSwipe(document.getElementById("stage")!, (dir) => store.swipe(dir));
+
+// The phone breakpoint: under 700px the glasses-lens compact layout doubles
+// as the mobile layout (body.compact widens the same CSS rules), so a judge
+// opening the live URL on a phone gets the reflowed UI, not a cropped desktop.
+const syncCompact = () => document.body.classList.toggle("compact", window.innerWidth <= 700);
+syncCompact();
+window.addEventListener("resize", syncCompact);
 
 declare global {
   interface Window {

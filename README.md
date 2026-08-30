@@ -127,6 +127,7 @@ Not every pair of glasses has a camera, so WebHUD pairs a navigation input to wh
 | Glasses / laptop **with a camera** | **Palm swipe** | Hands-free; MediaPipe tracking is local, camera pixels never leave the device |
 | Display glasses **without a camera** | **$4 Bluetooth ring** | A clicker in your pocket — Previous / Next / Select becomes a full D-pad |
 | Desktop, or nothing at hand | **Arrow keys** | ← → ↓ ↑ mirror the palm swipe and ring 1:1 |
+| Phone or tablet | **Touch** | Drag a card sideways — the same one-verb swipe; the layout reflows to the glasses-lens breakpoint |
 | Every context | **Voice, through the agent** | Carries *intent* ("show my week", "book slot 2") rather than navigation |
 
 As implemented — real captures of both channels:

@@ -22,6 +22,11 @@ const LENS = { cx: 0.54, cy: 0.548, width: 0.44, aspect: 1.18 };
 const FRAME_SPAN = 0.72;
 const FILL_MIN = 0.94;
 const FILL_MAX = 1.0;
+// Portrait guard: the lens display box may never outgrow the viewport width.
+// On a phone the fill-the-height rule would carve a lens wider than the
+// screen, so the frame shrinks instead — it floats centred with the blurred
+// ambient photo filling the gaps above and below.
+const LENS_MAX_W = 0.94;
 // Keeping the lens centred means the photo must overhang by these factors to
 // leave no gap: 1 / (2 * min(cx, 1 - cx)) horizontally, same with cy down.
 const COVER_W = 1.09;
@@ -31,7 +36,8 @@ const COVER_H = 1.11;
 // does the photo go and how big is the lens display box carved into it.
 export function glassesGeometry(vw: number, vh: number) {
   const cover = Math.max(COVER_H * vh, (COVER_W * vw) / IMAGE_ASPECT);
-  const dispH = Math.min(Math.max(cover, (vh * FILL_MIN) / FRAME_SPAN), (vh * FILL_MAX) / FRAME_SPAN);
+  const widthCap = (vw * LENS_MAX_W) / (LENS.width * IMAGE_ASPECT);
+  const dispH = Math.min(Math.max(cover, (vh * FILL_MIN) / FRAME_SPAN), (vh * FILL_MAX) / FRAME_SPAN, widthCap);
   const dispW = dispH * IMAGE_ASPECT;
   const boxW = LENS.width * dispW;
   const boxH = boxW / LENS.aspect;

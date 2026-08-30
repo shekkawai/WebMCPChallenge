@@ -72,6 +72,16 @@ needs a live `agent-browser` pass too.**
   is the only thing to change if the photo is swapped. The frame — not the photo — is
   anchored to the viewport centre, so a wider window shows more frame, never a cropped one.
   The app gets a real near-square viewport and **reflows**; it is never scaled down.
+  On portrait screens `LENS_MAX_W` caps the lens box at the viewport width — the frame
+  shrinks and floats centred over the ambient blur instead of the app overflowing the phone.
+- **The phone breakpoint reuses the glasses-lens layout.** Under 700px `main.ts` sets
+  `body.compact`, and every compact rule is written as `body:is(.glasses-on, .compact)` —
+  one layout, two triggers. Phone-only leftovers (chip fit, stacked welcome steps,
+  sideways-scrolling week/month, icon-collapsed dock, hidden feed) live in the
+  `@media (max-width: 700px)` block at the end of `style.css`, `body.compact`-prefixed so
+  they win by source order. Touch swipe (`src/input/touch.ts`) maps a horizontal drag to
+  the same one-verb swipe, and ignores drags starting on the map, reader, or calendar
+  (panning and scrolling win there).
 - `public/mediapipe/` is ~40 MB of vendored WASM + hand-landmarker model (no CDN egress).
   It is deliberate; obligations are recorded in `THIRD-PARTY-NOTICES.md`.
 

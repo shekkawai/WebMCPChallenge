@@ -202,12 +202,12 @@ body {
 .hello.welcome .steps b { color: rgba(255, 255, 255, 0.9); font-weight: 640; }
 .hello.welcome .fallback { margin-top: 20px; font-size: 12.5px; color: rgba(255, 255, 255, 0.38); }
 .hello.welcome .fallback code { font-family: inherit; color: rgba(255, 255, 255, 0.55); }
-body.glasses-on .hello.welcome { max-width: none; }
-body.glasses-on .hello.welcome .tagline { font-size: 13px; }
-body.glasses-on .hello.welcome .steps { margin-top: 12px; gap: 8px; }
-body.glasses-on .hello.welcome .steps li { grid-template-columns: 94px 1fr; font-size: 11.5px; }
-body.glasses-on .hello.welcome .steps .k { letter-spacing: 0.06em; }
-body.glasses-on .hello.welcome .fallback { display: none; }
+body:is(.glasses-on, .compact) .hello.welcome { max-width: none; }
+body:is(.glasses-on, .compact) .hello.welcome .tagline { font-size: 13px; }
+body:is(.glasses-on, .compact) .hello.welcome .steps { margin-top: 12px; gap: 8px; }
+body:is(.glasses-on, .compact) .hello.welcome .steps li { grid-template-columns: 94px 1fr; font-size: 11.5px; }
+body:is(.glasses-on, .compact) .hello.welcome .steps .k { letter-spacing: 0.06em; }
+body:is(.glasses-on, .compact) .hello.welcome .fallback { display: none; }
 
 /* ---- card deck ---- */
 .deck { position: relative; height: 100%; }
@@ -573,63 +573,63 @@ body.glasses-on #app {
 
 /* The glasses breakpoint: like a phone media query, but the trigger is the
    lens. The app gets a near-square viewport, so the layout compacts. */
-body.glasses-on #chip { top: 12px; gap: 9px; padding: 7px 15px; font-size: 11.5px; }
-body.glasses-on #chip .mcp, body.glasses-on #chip .mcp + .sep { display: none; }
-body.glasses-on #camera-toggle, body.glasses-on #controller-toggle, body.glasses-on #glasses-toggle { font-size: 11px; padding: 4px 9px; }
-body.glasses-on #stage { inset: 56px 0 86px; }
-body.glasses-on .hello { padding: 28px 36px; border-radius: 26px; }
-body.glasses-on .hello h1 { font-size: 26px; }
-body.glasses-on .hello p { font-size: 13.5px; margin-top: 9px; }
-body.glasses-on .card {
+body:is(.glasses-on, .compact) #chip { top: 12px; gap: 9px; padding: 7px 15px; font-size: 11.5px; }
+body:is(.glasses-on, .compact) #chip .mcp, body:is(.glasses-on, .compact) #chip .mcp + .sep { display: none; }
+body:is(.glasses-on, .compact) #camera-toggle, body:is(.glasses-on, .compact) #controller-toggle, body:is(.glasses-on, .compact) #glasses-toggle { font-size: 11px; padding: 4px 9px; }
+body:is(.glasses-on, .compact) #stage { inset: 56px 0 86px; }
+body:is(.glasses-on, .compact) .hello { padding: 28px 36px; border-radius: 26px; }
+body:is(.glasses-on, .compact) .hello h1 { font-size: 26px; }
+body:is(.glasses-on, .compact) .hello p { font-size: 13.5px; margin-top: 9px; }
+body:is(.glasses-on, .compact) .card {
   width: min(400px, 82%); min-height: 272px; margin-top: -150px;
   padding: 22px 26px; border-radius: 24px;
 }
-body.glasses-on .reader { width: min(520px, 90%); padding: 26px 30px; border-radius: 26px; }
-body.glasses-on .reader h1 { font-size: 23px; }
-body.glasses-on .reader .body { font-size: 14px; line-height: 1.65; margin-top: 14px; }
-body.glasses-on .rhint { margin-top: 18px; font-size: 10.5px; }
-body.glasses-on .calwrap { padding: 0 20px; }
-body.glasses-on .calhead { font-size: 13.5px; margin-bottom: 10px; }
-body.glasses-on .week { gap: 7px; }
-body.glasses-on .day { border-radius: 15px; padding: 10px 9px; }
-body.glasses-on .dh { margin-bottom: 7px; }
-body.glasses-on .dh .wd { font-size: 9px; letter-spacing: 0.1em; }
-body.glasses-on .dh .dn { font-size: 15px; }
-body.glasses-on .ev { border-radius: 8px; padding: 5px 7px; font-size: 10px; margin-top: 5px; }
-body.glasses-on .ev b { font-size: 9.5px; }
-body.glasses-on .mhead { gap: 6px; margin-bottom: 5px; }
-body.glasses-on .mhead span { font-size: 9px; }
-body.glasses-on .month { gap: 6px; }
-body.glasses-on .mcell { border-radius: 11px; padding: 6px 8px; }
-body.glasses-on .mcell .dn { font-size: 11px; }
-body.glasses-on .mdots { margin-top: 4px; }
-body.glasses-on .present { padding: 0 18px 5px; }
-body.glasses-on .present-head { align-items: flex-start; margin-bottom: 10px; gap: 10px; }
-body.glasses-on .present-head h1 { font-size: 18px; margin-top: 2px; }
-body.glasses-on .present-note { display: none; }
-body.glasses-on .purpose { font-size: 8.5px; }
-body.glasses-on .compare-table { display: none; }
-body.glasses-on .comparison { justify-content: flex-start; padding-bottom: 5px; }
-body.glasses-on .compare-cards { display: block; }
-body.glasses-on .compare-cards .card { width: min(390px, 88%); min-height: 252px; margin-top: -132px; }
-body.glasses-on .present-list .list-rows { display: block; position: relative; overflow: visible; }
-body.glasses-on .present-list .list-row { display: none; }
-body.glasses-on .present-list .list-row.focus { display: grid; position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%); width: min(390px, 90%); min-height: 220px; grid-template-columns: 30px minmax(0, 1fr); align-content: center; padding: 24px; border-radius: 24px; }
-body.glasses-on .present-list .list-row.focus .badge { grid-column: 2; margin: 8px 0 0; justify-self: start; }
-body.glasses-on .present-list .list-row.focus .triage-state { grid-column: 2; margin-top: 10px; }
-body.glasses-on .present-list .list-copy h2 { font-size: 21px; }
-body.glasses-on .present-list .list-copy p { margin-top: 12px; white-space: normal; font-size: 13px; line-height: 1.5; }
-body.glasses-on .summary-grid { display: block; position: relative; }
-body.glasses-on .summary-card { display: none; }
-body.glasses-on .summary-card.focus { display: block; position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%); width: min(390px, 90%); max-height: 100%; padding: 24px; }
-body.glasses-on #dock { bottom: 14px; padding: 6px; border-radius: 20px; }
-body.glasses-on .dock-item { padding: 7px 12px; font-size: 11.5px; gap: 7px; border-radius: 14px; }
-body.glasses-on .dock-item .ic { width: 19px; height: 19px; border-radius: 6px; }
-body.glasses-on .dock-item .ic svg { width: 11px; height: 11px; }
-body.glasses-on .dock-hint { top: -19px; font-size: 8.5px; letter-spacing: 0.1em; }
-body.glasses-on #hint { display: none; }
-body.glasses-on #feed { left: 18px; bottom: 16px; width: 220px; font-size: 9.5px; }
-body.glasses-on #swipe-pulse { font-size: 44px; }
+body:is(.glasses-on, .compact) .reader { width: min(520px, 90%); padding: 26px 30px; border-radius: 26px; }
+body:is(.glasses-on, .compact) .reader h1 { font-size: 23px; }
+body:is(.glasses-on, .compact) .reader .body { font-size: 14px; line-height: 1.65; margin-top: 14px; }
+body:is(.glasses-on, .compact) .rhint { margin-top: 18px; font-size: 10.5px; }
+body:is(.glasses-on, .compact) .calwrap { padding: 0 20px; }
+body:is(.glasses-on, .compact) .calhead { font-size: 13.5px; margin-bottom: 10px; }
+body:is(.glasses-on, .compact) .week { gap: 7px; }
+body:is(.glasses-on, .compact) .day { border-radius: 15px; padding: 10px 9px; }
+body:is(.glasses-on, .compact) .dh { margin-bottom: 7px; }
+body:is(.glasses-on, .compact) .dh .wd { font-size: 9px; letter-spacing: 0.1em; }
+body:is(.glasses-on, .compact) .dh .dn { font-size: 15px; }
+body:is(.glasses-on, .compact) .ev { border-radius: 8px; padding: 5px 7px; font-size: 10px; margin-top: 5px; }
+body:is(.glasses-on, .compact) .ev b { font-size: 9.5px; }
+body:is(.glasses-on, .compact) .mhead { gap: 6px; margin-bottom: 5px; }
+body:is(.glasses-on, .compact) .mhead span { font-size: 9px; }
+body:is(.glasses-on, .compact) .month { gap: 6px; }
+body:is(.glasses-on, .compact) .mcell { border-radius: 11px; padding: 6px 8px; }
+body:is(.glasses-on, .compact) .mcell .dn { font-size: 11px; }
+body:is(.glasses-on, .compact) .mdots { margin-top: 4px; }
+body:is(.glasses-on, .compact) .present { padding: 0 18px 5px; }
+body:is(.glasses-on, .compact) .present-head { align-items: flex-start; margin-bottom: 10px; gap: 10px; }
+body:is(.glasses-on, .compact) .present-head h1 { font-size: 18px; margin-top: 2px; }
+body:is(.glasses-on, .compact) .present-note { display: none; }
+body:is(.glasses-on, .compact) .purpose { font-size: 8.5px; }
+body:is(.glasses-on, .compact) .compare-table { display: none; }
+body:is(.glasses-on, .compact) .comparison { justify-content: flex-start; padding-bottom: 5px; }
+body:is(.glasses-on, .compact) .compare-cards { display: block; }
+body:is(.glasses-on, .compact) .compare-cards .card { width: min(390px, 88%); min-height: 252px; margin-top: -132px; }
+body:is(.glasses-on, .compact) .present-list .list-rows { display: block; position: relative; overflow: visible; }
+body:is(.glasses-on, .compact) .present-list .list-row { display: none; }
+body:is(.glasses-on, .compact) .present-list .list-row.focus { display: grid; position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%); width: min(390px, 90%); min-height: 220px; grid-template-columns: 30px minmax(0, 1fr); align-content: center; padding: 24px; border-radius: 24px; }
+body:is(.glasses-on, .compact) .present-list .list-row.focus .badge { grid-column: 2; margin: 8px 0 0; justify-self: start; }
+body:is(.glasses-on, .compact) .present-list .list-row.focus .triage-state { grid-column: 2; margin-top: 10px; }
+body:is(.glasses-on, .compact) .present-list .list-copy h2 { font-size: 21px; }
+body:is(.glasses-on, .compact) .present-list .list-copy p { margin-top: 12px; white-space: normal; font-size: 13px; line-height: 1.5; }
+body:is(.glasses-on, .compact) .summary-grid { display: block; position: relative; }
+body:is(.glasses-on, .compact) .summary-card { display: none; }
+body:is(.glasses-on, .compact) .summary-card.focus { display: block; position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%); width: min(390px, 90%); max-height: 100%; padding: 24px; }
+body:is(.glasses-on, .compact) #dock { bottom: 14px; padding: 6px; border-radius: 20px; }
+body:is(.glasses-on, .compact) .dock-item { padding: 7px 12px; font-size: 11.5px; gap: 7px; border-radius: 14px; }
+body:is(.glasses-on, .compact) .dock-item .ic { width: 19px; height: 19px; border-radius: 6px; }
+body:is(.glasses-on, .compact) .dock-item .ic svg { width: 11px; height: 11px; }
+body:is(.glasses-on, .compact) .dock-hint { top: -19px; font-size: 8.5px; letter-spacing: 0.1em; }
+body:is(.glasses-on, .compact) #hint { display: none; }
+body:is(.glasses-on, .compact) #feed { left: 18px; bottom: 16px; width: 220px; font-size: 9.5px; }
+body:is(.glasses-on, .compact) #swipe-pulse { font-size: 44px; }
 
 #glasses-chrome { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
 #glasses-chrome[hidden] { display: none; }
@@ -754,15 +754,47 @@ body.glasses-on #swipe-pulse { font-size: 44px; }
 .map-fact b { font-weight: 600; color: rgba(255, 255, 255, 0.38); margin-right: 4px; }
 .mapstage .counter { z-index: 500; }
 
-body.glasses-on .mapstage { padding: 0 10px; }
-body.glasses-on .map-canvas { inset: 0 10px; border-radius: 18px; }
-body.glasses-on .map-overlay { left: 24px; bottom: 16px; max-width: 250px; padding: 12px 14px; border-radius: 16px; }
-body.glasses-on .map-overlay h2 { font-size: 15px; }
-body.glasses-on .map-overlay .prevw { display: none; }
-body.glasses-on .map-fact { display: none; }
+body:is(.glasses-on, .compact) .mapstage { padding: 0 10px; }
+body:is(.glasses-on, .compact) .map-canvas { inset: 0 10px; border-radius: 18px; }
+body:is(.glasses-on, .compact) .map-overlay { left: 24px; bottom: 16px; max-width: 250px; padding: 12px 14px; border-radius: 16px; }
+body:is(.glasses-on, .compact) .map-overlay h2 { font-size: 15px; }
+body:is(.glasses-on, .compact) .map-overlay .prevw { display: none; }
+body:is(.glasses-on, .compact) .map-fact { display: none; }
 
 /* Dark-mode basemap: filter the raster tiles only — route, pins, and the
    you-dot live in other Leaflet panes and keep their true colors. */
 .map-live .map-dark-tiles {
   filter: invert(1) hue-rotate(180deg) brightness(0.82) contrast(0.92) saturate(0.35);
+}
+
+/* ---- phone breakpoint ---- */
+/* Under 700px main.ts sets body.compact, so the glasses-lens layout above
+   doubles as the phone layout. These are the phone-only leftovers: the chip
+   must fit the width, the welcome steps stack, the seven-day grids scroll
+   sideways instead of crushing, and long dock labels truncate. Selectors are
+   body.compact-prefixed to outrank the shared compact rules by source order. */
+@media (max-width: 700px) {
+  body.compact #chip { max-width: calc(100vw - 16px); gap: 7px; padding: 6px 11px; }
+  body.compact #chip #chip-date, body.compact #chip #chip-date + .sep { display: none; }
+  body.compact .hello { width: min(92vw, 560px); padding: 24px 22px; }
+  body.compact .hello.welcome .steps li { grid-template-columns: 1fr; gap: 3px; }
+  body.compact .calwrap { overflow-x: auto; overflow-y: hidden; }
+  body.compact .week, body.compact .month, body.compact .mhead { min-width: 560px; }
+  /* The dock must fit a ~366px lens: inactive tabs collapse to their icons,
+     the active one keeps a truncated label. */
+  body.compact .dock-item { padding: 7px 9px; }
+  body.compact .dock-item span:not(.ic) { max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.compact .dock-item:not(.on):not(.pick) span:not(.ic) { display: none; }
+  /* The agent feed cannot avoid overlapping content inside the lens box. */
+  body.compact #feed { display: none; }
+  /* Inside the lens the welcome card is taller than the box — scroll it. */
+  body.compact .hello { max-height: 100%; overflow-y: auto; }
+  body.compact .compare-cards .card, body.compact .present-list .list-row.focus, body.compact .summary-card.focus { width: min(92vw, 390px); }
+  body.compact .card { width: min(92vw, 400px); min-height: 0; margin-top: -136px; max-height: calc(100% + 60px); overflow-y: auto; }
+  body.compact .reader { width: min(94vw, 520px); padding: 22px 20px; }
+  body.compact #camera-panel { right: 12px; top: 70px; width: 190px; }
+  body.compact .map-overlay { left: 14px; bottom: 14px; max-width: min(250px, calc(100vw - 28px)); }
+  /* The overlay card owns the map's bottom edge on a phone — the item
+     counter would sit underneath it, so it moves to the top. */
+  body.compact .mapstage .counter { bottom: auto; top: 10px; font-size: 10.5px; }
 }
