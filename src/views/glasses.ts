@@ -59,6 +59,7 @@ export class GlassesMode {
   private chrome: HTMLElement;
   private app: HTMLElement;
   private enabled = false;
+  private hintEl: HTMLElement | null = null;
 
   constructor() {
     this.button = document.querySelector<HTMLButtonElement>("#glasses-toggle")!;
@@ -75,20 +76,40 @@ export class GlassesMode {
     window.addEventListener("resize", () => this.reposition());
 
     const param = new URLSearchParams(location.search).get("glasses");
-    let saved = false;
+    let saved: string | null = null;
     try {
-      saved = localStorage.getItem(STORAGE_KEY) === "1";
+      saved = localStorage.getItem(STORAGE_KEY);
     } catch {
       // Storage can be disabled in restricted in-app browsers.
     }
-    if (param === "1" || (param === null && saved)) this.toggle(true, true);
+    if (param === "1" || (param === null && saved === "1")) this.toggle(true, true);
+    else if (param === null && saved === null) this.showHint();
   }
 
   get active() {
     return this.enabled;
   }
 
+  // First-visit nudge: the lens is the pitch but the desktop is the working
+  // baseline, so the chip advertises the glasses view once instead of the app
+  // opening in it. Any toggle writes STORAGE_KEY, so the hint never returns.
+  private showHint() {
+    this.button.classList.add("hint");
+    this.hintEl = document.createElement("span");
+    this.hintEl.id = "glasses-hint";
+    this.hintEl.textContent = "see it in a lens · G";
+    this.button.appendChild(this.hintEl);
+  }
+
+  private hideHint() {
+    if (!this.hintEl) return;
+    this.button.classList.remove("hint");
+    this.hintEl.remove();
+    this.hintEl = null;
+  }
+
   toggle(force?: boolean, silent = false) {
+    this.hideHint();
     this.enabled = force ?? !this.enabled;
     document.body.classList.toggle("glasses-on", this.enabled);
     document.dispatchEvent(new CustomEvent("surface-contextchange", { detail: { context: this.enabled ? "glasses" : "desktop" } }));
