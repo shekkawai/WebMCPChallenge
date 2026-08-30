@@ -11,7 +11,7 @@ const STORAGE_KEY = "webmcp-surface-glasses";
 // app is given a real near-square viewport of this shape (not scaled down),
 // so the layout genuinely reflows to fit the lens.
 const IMAGE_ASPECT = 1920 / 1334;
-const LENS = { cx: 0.523, cy: 0.54, width: 0.44, aspect: 1.18 };
+const LENS = { cx: 0.54, cy: 0.548, width: 0.44, aspect: 1.18 };
 
 // The glasses frame is the subject, not the photo. FRAME_SPAN is how much of
 // the image's height the frame occupies; the photo is scaled so the frame
@@ -19,13 +19,13 @@ const LENS = { cx: 0.523, cy: 0.54, width: 0.44, aspect: 1.18 };
 // centre is pinned to the viewport centre. On a wide screen the photo bleeds
 // off the sides (mostly the left, where the second lens is) instead of the
 // frame being cropped — so a wider window shows MORE frame, not less.
-const FRAME_SPAN = 0.75;
+const FRAME_SPAN = 0.72;
 const FILL_MIN = 0.94;
 const FILL_MAX = 1.0;
 // Keeping the lens centred means the photo must overhang by these factors to
-// leave no gap: 1 / max(cx, 1 - cx) horizontally, 1 / max(cy, 1 - cy) down.
-const COVER_W = 1.05;
-const COVER_H = 1.09;
+// leave no gap: 1 / (2 * min(cx, 1 - cx)) horizontally, same with cy down.
+const COVER_W = 1.09;
+const COVER_H = 1.11;
 
 // Pure geometry so it can be tested without a DOM: given a viewport, where
 // does the photo go and how big is the lens display box carved into it.

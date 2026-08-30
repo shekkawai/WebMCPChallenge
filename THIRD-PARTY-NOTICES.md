@@ -26,3 +26,9 @@ CloudMade. BSD 2-Clause License.
   attribution is displayed on the map itself.
 - Walking routes are fetched at runtime from the public
   [FOSSGIS OSRM](https://routing.openstreetmap.de/) instance (demo-scale use only).
+
+## Glasses backdrop image
+
+`public/glasses-pov.jpg` (the point-of-view photo behind the glasses simulation)
+is an AI-generated image created by the project author with Google Nano Banana 2
+(Gemini image generation) for this project. No third-party photograph is used.
