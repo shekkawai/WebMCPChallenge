@@ -80,6 +80,15 @@ needs a live `agent-browser` pass too.**
   The app gets a real near-square viewport and **reflows**; it is never scaled down.
   On portrait screens `LENS_MAX_W` caps the lens box at the viewport width — the frame
   shrinks and floats centred over the ambient blur instead of the app overflowing the phone.
+- **Every glasses entry plays a 3.4 s power-on boot** (dark hold → lens light strip →
+  WEBHUD wordmark → scanline → UI materializes), built for filming the video open; **B**
+  replays it. It is pure CSS on `body.glasses-booting` (the `boot-*` keyframes); `BOOT_MS`
+  in `glasses.ts` must match the keyframe duration, and the `#glasses-boot` overlay is
+  pinned to the same lens box as `#app` by `reposition()`. Animating opacity/blur/scale on
+  `#app` is safe because all its children are `position: absolute` — never add a
+  `position: fixed` child, or the boot (and any future `#app` transform) will re-parent it.
+  To freeze a boot phase for a screenshot, pause with a negative `animation-delay`
+  override and screenshot within `BOOT_MS`, or the cleanup timer clears the class first.
 - **The phone breakpoint reuses the glasses-lens layout.** Under 700px `main.ts` sets
   `body.compact`, and every compact rule is written as `body:is(.glasses-on, .compact)` —
   one layout, two triggers. Phone-only leftovers (chip fit, stacked welcome steps,

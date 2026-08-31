@@ -5,6 +5,10 @@
 // channel (agent tools, palm, ring, keys) keeps working.
 const STORAGE_KEY = "webmcp-surface-glasses";
 
+// Power-on boot: total length of the CSS sequence (keep in sync with the
+// `boot-*` keyframes in style.css, which are all authored on this duration).
+const BOOT_MS = 3400;
+
 // Where the lens sits inside the photo, as fractions of the image, and the
 // display box carved into it. Tuned by eye against public/glasses-pov.jpg —
 // adjust here if the photo changes. `aspect` is the glasses breakpoint: the
@@ -66,18 +70,28 @@ export class GlassesMode {
   private app: HTMLElement;
   private enabled = false;
   private hintEl: HTMLElement | null = null;
+  private bootEl: HTMLElement;
+  private bootTimer: number | null = null;
 
   constructor() {
     this.button = document.querySelector<HTMLButtonElement>("#glasses-toggle")!;
     this.app = document.querySelector<HTMLElement>("#app")!;
     this.backdrop = this.buildBackdrop();
     this.chrome = this.buildChrome();
+    this.bootEl = this.buildBoot();
     this.button.addEventListener("click", () => this.toggle());
     window.addEventListener("keydown", (event) => {
-      if (event.repeat || event.key.toLowerCase() !== "g") return;
+      if (event.repeat) return;
+      const key = event.key.toLowerCase();
+      if (key !== "g" && key !== "b") return;
       const t = event.target;
       if (t instanceof Element && t.closest("input, textarea, select, [contenteditable='true']")) return;
-      this.toggle();
+      if (key === "g") {
+        this.toggle();
+      } else if (this.enabled) {
+        feed("glasses · boot replay (B)");
+        this.boot();
+      }
     });
     window.addEventListener("resize", () => this.reposition());
 
@@ -125,7 +139,9 @@ export class GlassesMode {
     this.button.classList.toggle("on", this.enabled);
     if (this.enabled) {
       this.reposition();
+      this.boot();
     } else {
+      this.cancelBoot();
       for (const prop of ["position", "left", "top", "width", "height", "transform"] as const) {
         this.app.style[prop] = "";
       }
@@ -136,6 +152,29 @@ export class GlassesMode {
       // Session-only is fine.
     }
     if (!silent) feed(this.enabled ? "glasses · monocular simulation on" : "glasses · simulation off");
+  }
+
+  // Power-on sequence for filming: the frame holds with a dark, empty lens,
+  // a light strip ignites across it, the WEBHUD wordmark flares, a scanline
+  // sweeps, and the live UI materializes. Every phase is CSS keyframes driven
+  // by `body.glasses-booting`; this just restarts and later clears the class.
+  // Plays on every glasses entry; press B (in glasses mode) to replay it.
+  boot() {
+    if (!this.enabled) return;
+    this.cancelBoot();
+    this.bootEl.hidden = false;
+    void this.bootEl.offsetWidth;
+    document.body.classList.add("glasses-booting");
+    this.bootTimer = window.setTimeout(() => this.cancelBoot(), BOOT_MS);
+  }
+
+  private cancelBoot() {
+    if (this.bootTimer !== null) {
+      clearTimeout(this.bootTimer);
+      this.bootTimer = null;
+    }
+    document.body.classList.remove("glasses-booting");
+    this.bootEl.hidden = true;
   }
 
   // Scale the photo so the frame fills the viewport height (never cropped),
@@ -158,6 +197,12 @@ export class GlassesMode {
       width: `${g.boxW.toFixed(1)}px`,
       height: `${g.boxH.toFixed(1)}px`,
     });
+    Object.assign(this.bootEl.style, {
+      left: `${g.boxLeft.toFixed(1)}px`,
+      top: `${g.boxTop.toFixed(1)}px`,
+      width: `${g.boxW.toFixed(1)}px`,
+      height: `${g.boxH.toFixed(1)}px`,
+    });
   }
 
   private buildBackdrop(): HTMLElement {
@@ -170,6 +215,22 @@ export class GlassesMode {
       <img class="pov" src="/glasses-pov.jpg" alt="" draggable="false" />`;
     document.body.appendChild(el);
     this.photo = el.querySelector<HTMLImageElement>(".pov")!;
+    return el;
+  }
+
+  private buildBoot(): HTMLElement {
+    const el = document.createElement("div");
+    el.id = "glasses-boot";
+    el.hidden = true;
+    el.setAttribute("aria-hidden", "true");
+    el.innerHTML = `
+      <div class="boot-strip"></div>
+      <div class="boot-mark">
+        <span class="boot-name">WEBHUD</span>
+        <span class="boot-tag">a web page · your agent · any glass</span>
+      </div>
+      <div class="boot-scan"></div>`;
+    document.body.appendChild(el);
     return el;
   }
 

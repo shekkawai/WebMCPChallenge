@@ -24,7 +24,7 @@ Your agent (ChatGPT in its in-app browser, or any WebMCP-capable agent) pulls yo
 2. Ask the agent things like:
    - *"Show my latest emails on the surface"* (uses your connectors), or
    - *"Find three venues for an annual dinner and compare them"*, then *"I'm at SF Caltrain — find a cafe nearby"* → *"take me to the second one"* (the page draws and animates the real walking route, and hands the agent the distance and street names to speak).
-3. No camera or ring needed: **← → arrow keys mirror the palm swipe 1:1**, ↓ enters the dock (D-pad style), **G** toggles the smart-glasses simulation.
+3. No camera or ring needed: **← → arrow keys mirror the palm swipe 1:1**, ↓ enters the dock (D-pad style), **G** toggles the smart-glasses simulation (with a power-on boot; **B** replays it).
 4. No agent handy? Seeded demo states work in any browser:
    `?demo=mail | calendar | month | reader | compare | slots | options | people | cafes | route` — and add `&glasses=1` for the lens view.
 
@@ -67,6 +67,10 @@ The same `surface_present` dataset, with no second agent call — desktop render
 The glasses view is a real **glasses breakpoint**, not a scaled-down screen: the app gets a genuine near-square viewport carved into the lens, so the layout reflows and text stays readable — the way a phone breakpoint reflows a desktop page.
 
 ![Glasses simulation](shots/glasses.png)
+
+Entering the lens plays a **power-on boot**: the frame holds dark with an empty lens, a light strip ignites across it, the WEBHUD wordmark flares, a scanline sweeps, and the live UI materializes. Press **B** (while in the glasses view) to replay it.
+
+![Power-on boot](shots/boot.jpg)
 
 ## Screens
 
