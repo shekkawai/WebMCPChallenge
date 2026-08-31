@@ -40,14 +40,27 @@ describe("Store", () => {
       {
         id: "one",
         title: "Private mail",
+        subtitle: "Private sender",
+        badge: "Urgent",
         content: "TOP SECRET BODY",
         imageUrl: "data:image/png;base64,SECRET_IMAGE_BYTES",
+        facts: [{ label: "Private amount", value: "$9,999" }],
       },
     ]);
 
-    const state = JSON.stringify(store.getViewState());
+    const view = store.getViewState();
+    expect(view.stack?.focusedItem).toEqual({
+      id: "one",
+      title: "Private mail",
+      hasContent: true,
+      hasImage: true,
+    });
+    const state = JSON.stringify(view);
     expect(state).not.toContain("TOP SECRET BODY");
     expect(state).not.toContain("SECRET_IMAGE_BYTES");
+    expect(state).not.toContain("Private sender");
+    expect(state).not.toContain("Private amount");
+    expect(state).not.toContain("$9,999");
     expect(state).toContain('"hasContent":true');
     expect(state).toContain('"hasImage":true');
   });

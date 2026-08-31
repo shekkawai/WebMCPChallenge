@@ -293,7 +293,7 @@ function mapHTML(stack: Stack, s: State): string {
         <div class="map-loading" data-map-loading><span class="pill"><span class="mlspin"></span>Loading map…</span></div>
       </div>
       ${overlay}
-      <div class="counter" data-motion-counter>${esc(stack.title)} · ${stack.focusIndex + 1} of ${stack.items.length}</div>
+      <div class="counter map-counter" data-motion-counter><span class="map-counter-title">${esc(stack.title)}</span><span class="map-counter-position">${stack.focusIndex + 1} of ${stack.items.length}</span></div>
     </section>`;
 }
 

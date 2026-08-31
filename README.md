@@ -20,7 +20,7 @@ Your agent (ChatGPT in its in-app browser, or any WebMCP-capable agent) pulls yo
 
 ## Try it in 60 seconds (judges)
 
-1. Open the live URL in **ChatGPT desktop's in-app browser** (WebMCP works out of the box) or **Chrome 149+** with `chrome://flags/#enable-webmcp-testing` enabled.
+1. Open the live URL in the latest **ChatGPT desktop app** using **GPT-5.6 Sol or Terra**, or use **Chrome 149+** with `chrome://flags/#enable-webmcp-testing` enabled.
 2. Ask the agent things like:
    - *"Show my latest emails on the surface"* (uses your connectors), or
    - *"Find three venues for an annual dinner and compare them"*, then *"I'm at SF Caltrain — find a cafe nearby"* → *"take me to the second one"* (the page draws and animates the real walking route, and hands the agent the distance and street names to speak).
@@ -158,7 +158,7 @@ Try `?demo=cafes` and `?demo=route`. Swipe — palm, ring, or keys — moves pin
 
 ```bash
 bun install
-bun run test     # 88 tests: gesture landmarks, tool registration, intent contract, geometry
+bun run test     # 98 tests: gesture landmarks, tool registration, intent contract, geometry
 bun run dev
 # open http://localhost:5173/?demo=mail   (← → mirror the palm swipe; G toggles glasses)
 # window.__surface exposes the store, WebMCP adapter, and gesture controller
@@ -177,7 +177,7 @@ Deploy the production build to Cloudflare Workers with `bun run deploy`. Every p
 - Smart-glasses simulation: a true near-square lens breakpoint, pinned to the frame at any window size
 - Live map with animated walking routes (Leaflet + OSM + OSRM, keyless)
 - Unified motion system: palm-following cards, spring settling, directional transitions, reduced-motion support
-- 88 tests + CI; deployed on Cloudflare Workers static assets
+- 98 tests + CI; deployed on Cloudflare Workers static assets
 
 Early UI direction mockups live in `mockups/`.
 

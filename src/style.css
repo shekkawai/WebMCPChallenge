@@ -788,6 +788,7 @@ body:is(.glasses-on, .compact) #swipe-pulse { font-size: 44px; }
 }
 .map-fact b { font-weight: 600; color: rgba(255, 255, 255, 0.38); margin-right: 4px; }
 .mapstage .counter { z-index: 500; }
+.map-counter-title::after { content: " · "; }
 
 body:is(.glasses-on, .compact) .mapstage { padding: 0 10px; }
 body:is(.glasses-on, .compact) .map-canvas { inset: 0 10px; border-radius: 18px; }
@@ -795,6 +796,12 @@ body:is(.glasses-on, .compact) .map-overlay { left: 24px; bottom: 16px; max-widt
 body:is(.glasses-on, .compact) .map-overlay h2 { font-size: 15px; }
 body:is(.glasses-on, .compact) .map-overlay .prevw { display: none; }
 body:is(.glasses-on, .compact) .map-fact { display: none; }
+body:is(.glasses-on, .compact) .map-counter {
+  top: 10px; right: 22px; bottom: auto; left: auto; transform: none;
+  padding: 4px 9px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px;
+  background: rgba(12, 16, 24, 0.68); backdrop-filter: blur(10px);
+}
+body:is(.glasses-on, .compact) .map-counter-title { display: none; }
 
 /* Dark-mode basemap: filter the raster tiles only — route, pins, and the
    you-dot live in other Leaflet panes and keep their true colors. */
@@ -829,7 +836,5 @@ body:is(.glasses-on, .compact) .map-fact { display: none; }
   body.compact .reader { width: min(94vw, 520px); padding: 22px 20px; }
   body.compact #camera-panel { right: 12px; top: 70px; width: 190px; }
   body.compact .map-overlay { left: 14px; bottom: 14px; max-width: min(250px, calc(100vw - 28px)); }
-  /* The overlay card owns the map's bottom edge on a phone — the item
-     counter would sit underneath it, so it moves to the top. */
-  body.compact .mapstage .counter { bottom: auto; top: 10px; font-size: 10.5px; }
+  body.compact .map-counter { right: 18px; font-size: 10.5px; }
 }

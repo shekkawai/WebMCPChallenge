@@ -50,7 +50,7 @@ artifact in the repo — keep it and the code in agreement.
 
 ## Verification that actually catches things
 
-`bun test` (60 tests) covers pose maths from real landmark fixtures, the swipe classifier,
+`bun test` (98 tests) covers pose maths from real landmark fixtures, the swipe classifier,
 purpose mapping, adapter registration lifecycle, and glasses geometry. It has repeatedly
 passed while the app was broken in the browser — **every input, motion, or layout change
 needs a live `agent-browser` pass too.**

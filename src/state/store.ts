@@ -463,22 +463,9 @@ export class Store {
       item
         ? {
             id: item.id,
-            kind: item.kind ?? stack?.kind ?? "generic",
             title: item.title,
-            subtitle: item.subtitle,
-            badge: item.badge,
-            selected: Boolean(item.selected),
             hasContent: Boolean(item.content),
-              hasImage: Boolean(item.imageUrl ?? item.design?.imageUrl),
-              facts: item.facts,
-            design: item.design
-              ? {
-                  template: item.design.template,
-                  eventTitle: item.design.eventTitle,
-                  dateLine: item.design.dateLine,
-                  venue: item.design.venue,
-                }
-              : undefined,
+            hasImage: Boolean(item.imageUrl ?? item.design?.imageUrl),
           }
         : null;
     return {
