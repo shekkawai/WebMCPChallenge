@@ -72,6 +72,7 @@ export class GlassesMode {
   private hintEl: HTMLElement | null = null;
   private bootEl: HTMLElement;
   private bootTimer: number | null = null;
+  private bootRevealTimer: number | null = null;
 
   constructor() {
     this.button = document.querySelector<HTMLButtonElement>("#glasses-toggle")!;
@@ -166,12 +167,30 @@ export class GlassesMode {
     void this.bootEl.offsetWidth;
     document.body.classList.add("glasses-booting");
     this.bootTimer = window.setTimeout(() => this.cancelBoot(), BOOT_MS);
+    // Replay the welcome card's entrance at the materialize beat (the app
+    // starts fading in at 58% of the boot), so the WebHUD title condenses
+    // in together with the lens UI instead of having finished long before.
+    this.bootRevealTimer = window.setTimeout(() => {
+      this.bootRevealTimer = null;
+      const parts = document.querySelectorAll<HTMLElement>(
+        ".hello.welcome h1, .hello.welcome .tagline, .hello.welcome .steps li, .hello.welcome .fallback",
+      );
+      for (const el of parts) {
+        el.style.animation = "none";
+        void el.offsetWidth;
+        el.style.animation = "";
+      }
+    }, BOOT_MS * 0.62);
   }
 
   private cancelBoot() {
     if (this.bootTimer !== null) {
       clearTimeout(this.bootTimer);
       this.bootTimer = null;
+    }
+    if (this.bootRevealTimer !== null) {
+      clearTimeout(this.bootRevealTimer);
+      this.bootRevealTimer = null;
     }
     document.body.classList.remove("glasses-booting");
     this.bootEl.hidden = true;

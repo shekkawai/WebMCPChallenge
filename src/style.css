@@ -209,6 +209,33 @@ body:is(.glasses-on, .compact) .hello.welcome .steps li { grid-template-columns:
 body:is(.glasses-on, .compact) .hello.welcome .steps .k { letter-spacing: 0.06em; }
 body:is(.glasses-on, .compact) .hello.welcome .fallback { display: none; }
 
+/* Welcome entrance: the WebHUD wordmark condenses out of a blur, then the
+   copy rises in a stagger. Plays whenever the card enters the DOM; during the
+   glasses boot, glasses.ts replays it at the materialize beat so the title
+   lands together with the lens UI. */
+.hello.welcome h1 {
+  animation: hud-title-in 1s cubic-bezier(0.16, 0.8, 0.24, 1) both;
+}
+.hello.welcome .tagline,
+.hello.welcome .steps li,
+.hello.welcome .fallback {
+  animation: hud-rise-in 0.6s cubic-bezier(0.22, 0.7, 0.25, 1) both;
+}
+.hello.welcome .tagline { animation-delay: 0.3s; }
+.hello.welcome .steps li:nth-child(1) { animation-delay: 0.45s; }
+.hello.welcome .steps li:nth-child(2) { animation-delay: 0.57s; }
+.hello.welcome .steps li:nth-child(3) { animation-delay: 0.69s; }
+.hello.welcome .fallback { animation-delay: 0.85s; }
+@keyframes hud-title-in {
+  0% { opacity: 0; letter-spacing: 0.4em; filter: blur(8px); }
+  55% { opacity: 1; }
+  100% { opacity: 1; letter-spacing: -0.02em; filter: blur(0); }
+}
+@keyframes hud-rise-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* ---- card deck ---- */
 .deck { position: relative; height: 100%; }
 .card {
@@ -577,7 +604,7 @@ body:is(.glasses-on, .compact) #chip { top: 12px; gap: 9px; padding: 7px 15px; f
 body:is(.glasses-on, .compact) #chip .mcp, body:is(.glasses-on, .compact) #chip .mcp + .sep { display: none; }
 body:is(.glasses-on, .compact) #camera-toggle, body:is(.glasses-on, .compact) #controller-toggle, body:is(.glasses-on, .compact) #glasses-toggle { font-size: 11px; padding: 4px 9px; }
 body:is(.glasses-on, .compact) #stage { inset: 56px 0 86px; }
-body:is(.glasses-on, .compact) .hello { padding: 28px 36px; border-radius: 26px; }
+body:is(.glasses-on, .compact) .hello { top: 50%; max-height: 100%; overflow-y: auto; padding: 28px 36px; border-radius: 26px; }
 body:is(.glasses-on, .compact) .hello h1 { font-size: 26px; }
 body:is(.glasses-on, .compact) .hello p { font-size: 13.5px; margin-top: 9px; }
 body:is(.glasses-on, .compact) .card {
